@@ -8,7 +8,7 @@ import time
 
 # DÁN API KEY CỦA BẠN VÀO ĐÂY (LẤY TỪ BƯỚC 1)
 # Thay thế chuỗi này bằng API Key thật của bạn!
-API_KEY = "API_KEY_THẬT_CỦA_BẠN_ĐÃ_SAO_CHÉP_TỪ_GOOLE_AI_STUDIO" 
+API_KEY = "AIzaSyCs3v2fHkUnW3oix4dtzY5NH6-xKn7QX-4" 
 # Ví dụ: API_KEY = "AIzaSyCs3v2fHkUnW3oix4dtzY5NH6-xKn7QX-4" <--- API Key hợp lệ phải bắt đầu bằng 'AIzaSy'
 
 # Cấu hình API key cho thư viện Gemini
@@ -123,4 +123,5 @@ st.sidebar.info(
     \n
     Sản phẩm ứng dụng AI (Google Gemini) để tự động soạn giáo án cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
     """
+
 )
