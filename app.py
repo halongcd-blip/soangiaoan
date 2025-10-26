@@ -6,10 +6,13 @@ import time
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
-# DÁN API KEY CỦA BẠN VÀO ĐÂY (LẤY TỪ BƯỚC 1)
-# Thay thế chuỗi này bằng API Key thật của bạn!
-API_KEY = "AIzaSyCs3v2fHkUnW3oix4dtzY5NH6-xKn7QX-4" 
-# Ví dụ: API_KEY = "AIzaSyCs3v2fHkUnW3oix4dtzY5NH6-xKn7QX-4" <--- API Key hợp lệ phải bắt đầu bằng 'AIzaSy'
+# LẤY API KEY TỪ STREAMLIT SECRETS VÌ LÝ DO BẢO MẬT
+try:
+    # Tên biến bí mật trong Streamlit Cloud là "GEMINI_API_KEY"
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+except:
+    st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
+    st.stop() # Dừng ứng dụng nếu không tìm thấy key
 
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
@@ -90,8 +93,7 @@ yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Copy và dán
 if st.button("🚀 Tạo Giáo án ngay!"):
     if not mon_hoc or not lop or not bo_sach or not ten_bai or not yeu_cau:
         st.error("Vui lòng nhập đầy đủ cả 5 thông tin!")
-    elif API_KEY == "AIzaSyCs3v2fHkUnW3oix4dtzY5NH6-xKn7QX-4":
-        st.error("LỖI: Bạn chưa nhập API Key. Vui lòng kiểm tra lại file app.py")
+
     else:
         with st.spinner("Trợ lý AI đang soạn giáo án, vui lòng chờ trong giây lát..."):
             try:
@@ -125,4 +127,5 @@ st.sidebar.info(
     """
 
 )
+
 
