@@ -79,7 +79,7 @@ Hãy bắt đầu tạo giáo án.
 # -----------------------------------------------------------------
 
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
-st.title("🤖 Trợ lý Soạn giáo án Tiểu học")
+st.title("🤖 Trợ lý Soạn giáo án Tiểu học theo chuẩn GDPT 2018")
 st.write("Sản phẩm của thầy giáo Hoàng Trọng Nghĩa.")
 
 # Tạo 5 ô nhập liệu cho 5 biến số
@@ -121,11 +121,12 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
     """
-    Đây là sản phẩm demo tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
+    Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
     \n
-    Sản phẩm ứng dụng AI (Google Gemini) để tự động soạn giáo án cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
+    Sản phẩm ứng dụng AI để tự động soạn giáo án cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
     """
 
 )
+
 
 
