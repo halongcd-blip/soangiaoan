@@ -161,10 +161,14 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # 2. Gọi AI
                 response = model.generate_content(final_prompt)
 
-                # 3. Hiển thị kết quả
+             # 3. Hiển thị kết quả
                 st.balloons() # Hiệu ứng bóng bay khi thành công
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
-                st.markdown(response.text) # Dùng markdown để hiển thị đẹp hơn
+                
+                # --- SỬA LỖI: Thay thế chuỗi '<br/>' bằng ký tự xuống dòng để xuống dòng ---
+                cleaned_text = response.text.replace("<br/>", "\n") 
+                
+                st.markdown(cleaned_text) # Hiển thị văn bản đã được làm sạch
 
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
@@ -178,6 +182,7 @@ st.sidebar.info(
     """
 
 )
+
 
 
 
