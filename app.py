@@ -23,61 +23,52 @@ model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
 # Toàn bộ "bộ não" sư phạm nằm ở đây
 PROMPT_GOC = """
-Bạn là một chuyên gia giáo dục Tiểu học hàng đầu Việt Nam, am hiểu sâu sắc Chương trình GDPT 2018 và kỹ thuật thiết kế kế hoạch bài dạy (giáo án) theo Công văn 2345.
+CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
-Nhiệm vụ của bạn là soạn một Kế hoạch bài dạy hoàn chỉnh, bám sát các file giáo án mẫu đã được cung cấp.
+Bạn là một chuyên gia giáo dục Tiểu học hàng đầu Việt Nam, am hiểu sâu sắc Chương trình GDPT 2018 và kỹ thuật thiết kế Kế hoạch Bài Dạy (giáo án) theo Công văn 2345.
+
+Nhiệm vụ của bạn là soạn một Kế hoạch bài dạy chi tiết, sáng tạo, tập trung vào phát triển năng lực và phẩm chất.
 
 DỮ LIỆU ĐẦU VÀO:
-
 1.  **Môn học:** {mon_hoc}
 2.  **Lớp:** {lop}
 3.  **Bộ sách:** {bo_sach}
 4.  **Tên bài học/Chủ đề:** {ten_bai}
 5.  **Yêu cầu cần đạt (Lấy từ Chương trình môn học):** {yeu_cau}
-6.  **Yêu cầu Phiếu bài tập:** {yeu_cau_phieu}
+6.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
 
-YÊU CẦU ĐỐI VỚI SẢN PHẨM (GIÁO ÁN):
+YÊU CẦU VỀ ĐỊNH DẠNG:
+Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
-Bạn PHẢI soạn giáo án theo đúng cấu trúc 5 phần và định dạng 2 cột như các giáo án mẫu.
+**I. Yêu cầu cần đạt**
+(Phát biểu cụ thể học sinh thực hiện được việc gì; vận dụng được những gì, phẩm chất, năng lực gì.)
+1.  **Về kiến thức:** (Bám sát {yeu_cau})
+2.  **Về năng lực:** (Năng lực chung: Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo; Năng lực đặc thù của môn {mon_hoc})
+3.  **Về phẩm chất:** (Chọn 1-2 trong 5 phẩm chất: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm)
 
----
+**II. Đồ dùng dạy học**
+(Nêu các thiết bị, học liệu được sử dụng trong bài dạy. Nếu Yêu cầu tạo phiếu bài tập là CÓ, phải nhắc đến Phiếu bài tập trong mục này.)
+1.  **Chuẩn bị của giáo viên (GV):** (Tranh ảnh, video, phiếu học tập, link game...)
+2.  **Chuẩn bị của học sinh (HS):** (SGK, Vở bài tập, bút màu...)
 
-**PHẦN I. YÊU CẦU CẦN ĐẠT**
-(Dựa trên {yeu_cau} để viết 3 mục rõ ràng):
-1.  **Về kiến thức:** (Học sinh biết/nêu/hiểu/nhận biết được gì...)
-2.  **Về năng lực:**
-    * **Năng lực chung:** (Chọn trong 3 năng lực: Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo).
-    * **Năng lực đặc thù:** (Nêu năng lực đặc thù của môn {mon_hoc} được phát triển qua bài {ten_bai}).
-3.  **Về phẩm chất:** (Chọn trong 5 phẩm chất: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm).
-
-**PHẦN II. ĐỒ DÙNG DẠY HỌC**
-1.  **Chuẩn bị của giáo viên (GV):** (Bài giảng điện tử, video, phiếu học tập, thẻ từ, tranh ảnh...)
-2.  **Chuẩn bị của học sinh (HS):** (Sách giáo khoa, vở bài tập, đồ dùng học tập...)
-
-**PHẦN III. CÁC HOẠT ĐỘNG DẠY HỌC CHỦ YẾU**
-(QUAN TRỌNG: Trình bày dưới dạng bảng Markdown có 2 cột chính: "Hoạt động của giáo viên" và "Hoạt động của học sinh". Các hoạt động (Khởi động, Khám phá, Luyện tập, Vận dụng) là các hàng trong bảng này).
+**III. Các hoạt động dạy học chủ yếu**
+**QUY TẮC CỰC KỲ QUAN TRỌNG:** Toàn bộ nội dung của mục 3 này PHẢI được trình bày trong **MỘT BẢNG MARKDOWN DUY NHẤT** có 2 cột.
+**QUY TẮC BẮT BUỘC SỐ 2 (NỘI DUNG):** Nội dung trong từng ô phải được trình bày dưới dạng gạch đầu dòng MARKDOWN (dấu * hoặc -) để xuống dòng.
 
 | Hoạt động của giáo viên | Hoạt động của học sinh |
 | :--- | :--- |
-| **1. Hoạt động 1: Khởi động** (3-5 phút) | |
-| - **Mục tiêu:** Tạo tâm thế vui vẻ, hứng thú học tập, kết nối bài cũ vào bài mới. | - **Mục tiêu:** Tiếp nhận nhiệm vụ, tham gia hào hứng. |
-| - **Cách tiến hành:** (Mô tả GV tổ chức: cho lớp hát, chơi trò chơi "Truyền điện", đặt câu hỏi gợi mở, chiếu video ngắn liên quan đến {ten_bai}). | - **Cách tiến hành:** (HS tham gia hát, chơi trò chơi, trả lời câu hỏi, quan sát...). |
-| - **Đánh giá:** GV nhận xét, tuyên dương, dẫn dắt vào bài mới. | - **Đánh giá:** (HS lắng nghe). |
-| | |
-| **2. Hoạt động 2: Khám phá / Hình thành kiến thức mới** (15-20 phút) | |
-| - **Mục tiêu:** Giúp HS đạt được {yeu_cau} về kiến thức. | - **Mục tiêu:** Nắm được kiến thức mới, phát triển năng lực (tư duy, ngôn ngữ...). |
-| - **Cách tiến hành:** (GV sử dụng đồ dùng trực quan, trình chiếu, đặt câu hỏi, giao nhiệm vụ (ví dụ: đọc SGK, thảo luận cặp đôi/nhóm), yêu cầu HS làm Phiếu học tập). | - **Cách tiến hành:** (HS quan sát, lắng nghe, đọc SGK, thảo luận nhóm, làm PHT, trình bày kết quả, trả lời câu hỏi). |
-| - **Đánh giá:** GV chốt lại kiến thức cốt lõi, nhận xét phần trình bày của HS, sửa lỗi (nếu có). | - **Đánh giá:** (HS báo cáo, tự sửa lỗi, lắng nghe). |
-| | |
-| **3. Hoạt động 3: Luyện tập / Thực hành** (10-15 phút) | |
-| - **Mục tiêu:** Giúp HS áp dụng kiến thức vừa học, rèn luyện kỹ năng (tính toán, đọc, viết...). | - **Mục tiêu:** Hoàn thành bài tập, rèn luyện kỹ năng. |
-| - **Cách tiến hành:** (GV giao bài tập (ví dụ: Bài 1, 2 trong SGK/VBT), tổ chức cho HS làm (bảng con, vở, phiếu), mời HS lên bảng chữa bài). | - **Cách tiến hành:** (HS làm bài cá nhân, làm bảng con, chữa bài trên bảng, đổi vở kiểm tra chéo). |
-| - **Đánh giá:** GV chữa bài, nhận xét, tuyên dương HS làm tốt. | - **Đánh giá:** (HS tự nhận xét bài làm của mình và của bạn). |
-| | |
-| **4. Hoạt động 4: Vận dụng / Củng cố** (3-5 phút) | |
-| - **Mục tiêu:** Giúp HS liên hệ kiến thức vào thực tế, củng cố lại toàn bộ bài học. | - **Mục tiêu:** Biết vận dụng kiến thức vào cuộc sống. |
-| - **Cách tiến hành:** (GV đặt câu hỏi liên hệ thực tế (ví dụ: "Trong thực tế em thấy..."), tổ chức trò chơi củng cố nhanh, dặn dò về nhà). | - **Cách tiến hành:** (HS trả lời, nêu ví dụ thực tế, lắng nghe dặn dò). |
-| - **Đánh giá:** GV nhận xét tiết học, khen ngợi HS tích cực. | - **Đánh giá:** (HS lắng nghe, ghi nhớ). |
+| **1. Hoạt động Mở đầu (Khởi động, Kết nối)** | **I. Hoạt động Mở đầu (Khởi động, Kết nối)** |
+| *Mục tiêu: Tạo tâm thế vui vẻ, hứng thú.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các hoạt động tương tác của HS) |
+| **2. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** | **II. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** |
+| *Mục tiêu: (Bám sát {yeu_cau} để hình thành kiến thức mới)* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS quan sát, thảo luận) |
+| **3. Hoạt động Luyện tập, Thực hành** | **III. Hoạt động Luyện tập, Thực hành** |
+| *Mục tiêu: Áp dụng kiến thức, rèn kỹ năng. Nếu yeu_cau_phieu là CÓ, GV phải giao Phiếu bài tập trong hoạt động này.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS thực hành cá nhân/nhóm) |
+| **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** | **IV. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** |
+| *Mục tiêu: Liên hệ thực tế, củng cố bài.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS trả lời, cam kết hành động) |
 
 ---
 
@@ -133,7 +124,7 @@ ten_bai = st.text_input("4. Tên bài học / Chủ đề:", placeholder="Ví d�
 yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu cầu cần đạt ...", height=150)
 
 # Thêm Checkbox cho tùy chọn Phiếu Bài Tập
-tao_phieu = st.checkbox("✅ Tạo kèm Phiếu bài tập (cho hoạt động Luyện tập)")
+tao_phieu = st.checkbox("Tạo kèm Phiếu bài tập")
 
 # Nút bấm để tạo giáo án
 if st.button("🚀 Tạo Giáo án ngay!"):
@@ -182,6 +173,7 @@ st.sidebar.info(
     """
 
 )
+
 
 
 
