@@ -121,8 +121,8 @@ Hãy bắt đầu tạo giáo án.
 
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
 st.title("🤖 Trợ lý Soạn giáo án Tiểu học")
-st.write("Phát triển dựa trên mô hình Gemini 2.5 Flash của Google.")
-st.markdown("*(Đã cập nhật theo chuẩn Công văn 2345)*")
+st.write("Sản phẩm của thầy giáo Hoàng Trọng Nghĩa.")
+st.markdown("*(Giáo án được soạn theo chuẩn trương trình GDPT 2018)*")
 
 
 # Tạo 5 ô nhập liệu cho 5 biến số
@@ -182,6 +182,7 @@ st.sidebar.info(
     """
 
 )
+
 
 
 
