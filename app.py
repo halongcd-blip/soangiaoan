@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT 
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -15,9 +15,7 @@ from docx.shared import Inches
 import google.generativeai as genai
 from google.generativeai import types
 
-# 🚨 SỬA LỖI QUAN TRỌNG: ĐĂNG KÝ NAMESPACE 'w' TRƯỚC KHI SỬ DỤNG qn('w:...')
-from docx.oxml.ns import _register_for_tag
-_register_for_tag('w:topBdr') 
+# 🚨 KHÔNG CẦN DÒNG ĐĂNG KÝ NAMESPACE NỮA (VÌ SẼ DÙNG CÁCH KHÁC)
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -116,7 +114,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ FIX LỖI NAMESPACE 'w')
+# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ CHUYỂN SANG CÁCH AN TOÀN HƠN)
 # -----------------------------------------------------------------
 
 # Các mẫu regex để nhận diện các loại tiêu đề
@@ -129,31 +127,35 @@ def clean_content(text):
     # Loại bỏ triệt để dấu ** thừa
     return text.replace('**', '')
 
-# --- HÀM HỖ TRỢ TẮT/BẬT VIỀN (ĐÃ FIX LỖI set_cell_border NOT DEFINED) ---
-def set_cell_border(cell, **kwargs):
+# --- HÀM HỖ TRỢ ĐỊNH DẠNG VIỀN CELL AN TOÀN (DÙNG MÀU TRẮNG ĐỂ ẨN) ---
+def set_cell_border_safe(cell, border_color="auto", border_size=12, top_color=None, bottom_color=None):
     """
-    Tùy chỉnh viền của một ô (cell) trong Word.
+    Đặt viền cho ô theo cách an toàn hơn, đặc biệt dùng màu trắng để ẩn viền ngang.
     """
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
 
-    borders = {
-        'top': 'w:topBdr', 'left': 'w:leftBdr', 'bottom': 'w:bottomBdr', 'right': 'w:rightBdr',
-        'insideH': 'w:insideH', 'insideV': 'w:insideV'
-    }
+    # Áp dụng viền mặc định cho cả 4 cạnh
+    for tag in ('w:topBdr', 'w:bottomBdr', 'w:leftBdr', 'w:rightBdr'):
+        bdr = OxmlElement(tag)
+        
+        # Nếu là viền ngang (top/bottom) và có màu riêng biệt (White), áp dụng màu đó
+        if tag == 'w:topBdr' and top_color:
+            bdr.set(qn('w:color'), top_color)
+        elif tag == 'w:bottomBdr' and bottom_color:
+            bdr.set(qn('w:color'), bottom_color)
+        # Nếu là viền đứng (left/right) hoặc không có màu đặc biệt, dùng màu mặc định (auto)
+        else:
+            bdr.set(qn('w:color'), border_color)
 
-    for border_name, border_tag in borders.items():
-        if border_name in kwargs:
-            bdr = OxmlElement(border_tag)
-            
-            for key, value in kwargs[border_name].items():
-                bdr.set(qn('w:' + key), str(value))
-                
-            # Xóa viền cũ và thêm viền mới
-            for element in tcPr.findall(border_tag):
-                tcPr.remove(element)
+        bdr.set(qn('w:val'), 'single')
+        bdr.set(qn('w:sz'), str(border_size))
+        
+        # Xóa viền cũ và thêm viền mới
+        for element in tcPr.findall(tag):
+            tcPr.remove(element)
 
-            tcPr.append(bdr)
+        tcPr.append(bdr)
 
 # --- HÀM TẠO FILE WORD CHÍNH ---
 def create_word_document(markdown_text, lesson_title):
@@ -193,14 +195,10 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
             
-            # Tùy chỉnh viền cho Header (Viền trên ngoài cùng và viền dưới phân cách)
+            # Tùy chỉnh viền cho Header (Dùng viền mặc định 'auto' - màu đen)
             for cell in hdr_cells:
-                set_cell_border(cell, 
-                    top={"val": "single", "sz": 12, "color": "auto"},
-                    bottom={"val": "single", "sz": 12, "color": "auto"},
-                    left={"val": "single", "sz": 12, "color": "auto"},
-                    right={"val": "single", "sz": 12, "color": "auto"}
-                )
+                # set_cell_border_safe(cell, border_color="auto", top_color="auto", bottom_color="auto")
+                pass # Để mặc định có viền đen
             
             continue
             
@@ -211,6 +209,12 @@ def create_word_document(markdown_text, lesson_title):
             
             # Thoát khỏi bảng khi gặp tiêu đề lớn (PHẦN IV)
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
+                # Thêm viền dưới cho hàng cuối cùng trước khi thoát
+                if table.rows:
+                    last_row_cells = table.rows[-1].cells
+                    for cell in last_row_cells:
+                        set_cell_border_safe(cell, border_color="auto", top_color="FFFFFF", bottom_color="auto")
+                        
                 is_in_table_section = False
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
                     document.add_heading(line.strip().strip('**'), level=2)
@@ -237,13 +241,9 @@ def create_word_document(markdown_text, lesson_title):
                         p = row_cells[0].add_paragraph(title)
                         p.runs[0].bold = True 
                         
-                        # --- XỬ LÝ VIỀN CHO HÀNG TIÊU ĐỀ HOẠT ĐỘNG (Kẻ ngang phân cách) ---
-                        set_cell_border(row_cells[0], 
-                            top={"val": "single", "sz": 12, "color": "auto"}, # Viền trên
-                            bottom={"val": "single", "sz": 12, "color": "auto"}, # Viền dưới
-                            left={"val": "single", "sz": 12, "color": "auto"},
-                            right={"val": "single", "sz": 12, "color": "auto"}
-                        )
+                        # --- XỬ LÝ VIỀN CHO HÀNG TIÊU ĐỀ HOẠT ĐỘNG (Dùng viền đen) ---
+                        for cell in row_cells:
+                            set_cell_border_safe(cell, border_color="auto", top_color="auto", bottom_color="auto")
                         
                         continue
                         
@@ -252,14 +252,10 @@ def create_word_document(markdown_text, lesson_title):
                         # TẠO HÀNG MỚI CHO NỘI DUNG GV-HS ĐỒNG BỘ
                         row_cells = table.add_row().cells 
                         
-                        # --- TẮT VIỀN NGANG GIỮA CÁC HÀNG NỘI DUNG (ĐÃ SỬA LỖI KẺ NGANG THỪA) ---
+                        # --- ẨN VIỀN NGANG GIỮA CÁC HÀNG NỘI DUNG (MÀU TRẮNG) ---
                         for cell in row_cells:
-                            set_cell_border(cell, 
-                                top={"val": "none"}, 
-                                bottom={"val": "none"},
-                                left={"val": "single", "sz": 12, "color": "auto"},
-                                right={"val": "single", "sz": 12, "color": "auto"}
-                            )
+                            # Đặt màu viền trên và dưới là TRẮNG ("FFFFFF")
+                            set_cell_border_safe(cell, border_color="auto", top_color="FFFFFF", bottom_color="FFFFFF")
                         
                         # Xử lý nội dung (GV và HS) từng dòng một để đảm bảo đồng bộ
                         gv_lines_raw = [l.strip() for l in gv_content.split('\n') if l.strip()]
@@ -285,7 +281,7 @@ def create_word_document(markdown_text, lesson_title):
                         
                         continue
             
-        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG
+        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (GIỮ NGUYÊN)
         
         # Xử lý tiêu đề chính 
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
@@ -311,18 +307,12 @@ def create_word_document(markdown_text, lesson_title):
         else:
             document.add_paragraph(line)
             
-    # --- XỬ LÝ VIỀN DƯỚI CỦA HÀNG CUỐI CÙNG TRONG BẢNG ---
-    if table and len(table.rows) > 1:
+    # --- XỬ LÝ VIỀN DƯỚI CỦA HÀNG CUỐI CÙNG TRONG BẢNG (ĐÓNG BẢNG) ---
+    if is_in_table_section and table and len(table.rows) > 1:
         last_row_cells = table.rows[-1].cells
         for cell in last_row_cells:
-            # Chỉ thêm viền dưới để đóng bảng
-            set_cell_border(cell, 
-                bottom={"val": "single", "sz": 12, "color": "auto"},
-                # Đảm bảo viền trên vẫn bị tắt
-                top={"val": "none"}, 
-                left={"val": "single", "sz": 12, "color": "auto"},
-                right={"val": "single", "sz": 12, "color": "auto"}
-            )
+            # Đảm bảo viền dưới là màu đen (auto) để đóng bảng
+            set_cell_border_safe(cell, border_color="auto", top_color="FFFFFF", bottom_color="auto")
             
     # Lưu tài liệu vào bộ nhớ (BytesIO)
     bio = BytesIO()
