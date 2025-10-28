@@ -130,8 +130,7 @@ uploaded_file = st.file_uploader(
     type=["pdf", "png", "jpg", "jpeg"]
 )
 
-# Thêm ô nhập liệu mới cho tính năng Phiếu Bài Tập
-tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False) 
+
 
 # ... (Tiếp theo là nút bấm tạo giáo án)
 # Thêm Checkbox cho tùy chọn Phiếu Bài Tập
@@ -202,6 +201,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
