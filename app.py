@@ -1,8 +1,14 @@
 import streamlit as st
 import time
 from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT 
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from io import BytesIO
-import re # Cần để làm sạch Markdown
+import re
+from io import BytesIO
+
 from docx.shared import Inches
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
@@ -127,32 +133,16 @@ SUB_ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)([a-z]\)\s.*?)(\*\*|)\s*'
 # Loại bỏ mọi trường hợp "Cách tiến hành" và dấu ** thừa
 def clean_content(text):
     text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
-    # Loại bỏ dấu ** thừa
+    # Yêu cầu 2: Loại bỏ triệt để dấu ** thừa
     return text.replace('**', '')
 
-# --- HELPER ĐẶC BIỆT: Gom nội dung vào một cell và sử dụng ngắt dòng (Shift+Enter) để tránh kẻ ngang ---
-def add_cell_content_cohesively(cell, content):
-    """
-    Thêm toàn bộ nội dung của một cột (GV hoặc HS) vào MỘT ô duy nhất.
-    Sử dụng dấu xuống dòng (\\n) làm điểm phân tách logic.
-    """
-    
-    # Tách nội dung thành các dòng logic
-    lines = [line.strip() for line in content.split('\n') if line.strip()]
-    
-    for line_text in lines:
-        p = cell.add_paragraph()
-        
-        # --- Xử lý gạch đầu dòng (-) và loại bỏ số/ký tự list ---
-        if line_text.startswith('*') or line_text.startswith('-') or re.match(r'^\d+\.\s', line_text):
-            clean_text = re.sub(r'^[*-]\s*|^\d+\.\s*', '', line_text).strip()
-            p.text = clean_text
-            p.style = 'List Bullet' 
-        else:
-            p.text = line_text
+# (Giả sử hàm set_cell_border và unset_all_borders đã được thêm)
 
 def create_word_document(markdown_text, lesson_title):
     document = Document()
+    
+    # Thiết lập font size mặc định cho Normal style
+    document.styles['Normal'].font.size = Pt(12) 
     
     # 1. THÊM TIÊU ĐỀ CHÍNH (Yêu cầu: Căn giữa)
     if lesson_title:
@@ -163,9 +153,6 @@ def create_word_document(markdown_text, lesson_title):
     lines = markdown_text.split('\n')
     is_in_table_section = False
     table = None
-    
-    # Biến theo dõi để chỉ kẻ ngang sau các hoạt động lớn
-    last_was_activity_header = False 
     
     for line in lines:
         line = line.strip()
@@ -179,6 +166,7 @@ def create_word_document(markdown_text, lesson_title):
             
             # Tạo bảng 2 cột
             table = document.add_table(rows=1, cols=2)
+            # Tắt style mặc định để tự tùy chỉnh viền
             table.style = 'Table Grid' 
             table.autofit = False
             table.columns[0].width = Inches(3.5) 
@@ -189,29 +177,29 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
             
+            # Thiết lập viền mặc định cho bảng (Viền ngoài và viền đứng giữa)
+            for cell in hdr_cells:
+                # Tắt viền ngang (giữa header và nội dung)
+                set_cell_border(cell, bottom={"val": "single", "sz": 12, "color": "auto"})
+
             continue
             
         # 2. XỬ LÝ NỘI DUNG BÊN TRONG BẢNG
         if is_in_table_section and table is not None:
-            # Bỏ qua dòng phân cách bảng (| :--- | :--- |)
             if line.startswith('| :---'):
                 continue
             
-            # Kiểm tra xem bảng đã kết thúc chưa
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
                 is_in_table_section = False
-                last_was_activity_header = False
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
                     document.add_heading(line.strip().strip('**'), level=2)
                 continue
             
-            # Xử lý các dòng dữ liệu Markdown
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
                 if len(cells_content) == 2:
                     
-                    # Áp dụng hàm làm sạch nội dung cột (loại bỏ Cách tiến hành và ** thừa)
                     gv_content = clean_content(cells_content[0])
                     hs_content = clean_content(cells_content[1])
                     
@@ -220,56 +208,82 @@ def create_word_document(markdown_text, lesson_title):
                     is_sub_header = SUB_ACTIVITY_HEADERS_PATTERN.match(gv_content)
                     
                     if is_main_header or is_sub_header:
-                        # Tiêu đề được tìm thấy: Merge cột và tạo tiêu đề in đậm
-                        title = gv_content.strip() # Nội dung đã được làm sạch ** ở hàm clean_content
+                        title = gv_content.strip()
 
                         row_cells = table.add_row().cells 
-                        row_cells[0].merge(row_cells[1]) 
+                        row_cells[0].merge(row_cells[1]) # GỘP CỘT
 
                         p = row_cells[0].add_paragraph(title)
                         p.runs[0].bold = True 
                         
-                        last_was_activity_header = is_main_header # Đánh dấu nếu là header lớn
+                        # --- XỬ LÝ VIỀN CHO HÀNG TIÊU ĐỀ HOẠT ĐỘNG ---
+                        # Chỉ cần viền dưới để phân cách Hoạt động này với nội dung tiếp theo
+                        set_cell_border(row_cells[0], 
+                            top={"val": "single", "sz": 12, "color": "auto"}, # Viền trên để phân cách với hoạt động trước
+                            bottom={"val": "single", "sz": 12, "color": "auto"},
+                            left={"val": "single", "sz": 12, "color": "auto"},
+                            right={"val": "single", "sz": 12, "color": "auto"}
+                        )
                         
                         continue
                         
                     # --- XỬ LÝ NỘI DUNG THƯỜNG ---
                     else:
-                        # TẠO MỘT HÀNG MỚI ĐỂ CHỨA NỘI DUNG GV & HS
+                        # TẠO HÀNG MỚI ĐỂ ĐẢM BẢO ĐỒNG BỘ NỘI DUNG GV - HS
                         row_cells = table.add_row().cells 
                         
-                        # Thêm nội dung vào cell 0 (GV) và cell 1 (HS)
-                        # Bằng cách thêm tất cả nội dung vào CÙNG MỘT CELL, chúng ta ngăn chặn được
-                        # việc tạo đường kẻ ngang giữa các gạch đầu dòng con.
-                        add_cell_content_cohesively(row_cells[0], gv_content)
-                        add_cell_content_cohesively(row_cells[1], hs_content)
+                        # --- TẮT VIỀN NGANG GIỮA CÁC HÀNG NỘI DUNG ---
+                        for cell in row_cells:
+                            # Tắt viền trên và dưới (chỉ giữ lại viền đứng)
+                            set_cell_border(cell, 
+                                top={"val": "none"}, 
+                                bottom={"val": "none"},
+                                left={"val": "single", "sz": 12, "color": "auto"},
+                                right={"val": "single", "sz": 12, "color": "auto"}
+                            )
                         
-                        # Vấn đề đồng bộ hàng ngang: 
-                        # Phương pháp này sẽ gom nội dung vào cell. Để đồng bộ tuyệt đối (câu hỏi-câu trả lời), 
-                        # cần có cấu trúc Markdown rất chặt. Nếu Markdown không khớp dòng, Word sẽ không đồng bộ. 
-                        # Đây là giới hạn lớn nhất của việc chuyển đổi. Ta chỉ có thể đảm bảo 
-                        # không có kẻ ngang giữa các bullet point con.
+                        # Xử lý nội dung (GV và HS) từng dòng một để đảm bảo đồng bộ
+                        gv_lines_raw = [l.strip() for l in gv_content.split('\n') if l.strip()]
+                        hs_lines_raw = [l.strip() for l in hs_content.split('\n') if l.strip()]
+                        max_lines = max(len(gv_lines_raw), len(hs_lines_raw))
+                        
+                        for i in range(max_lines):
+                            gv_line = gv_lines_raw[i] if i < len(gv_lines_raw) else ""
+                            hs_line = hs_lines_raw[i] if i < len(hs_lines_raw) else ""
 
+                            for cell_index, line_text in enumerate([gv_line, hs_line]):
+                                p = row_cells[cell_index].add_paragraph()
+                                if not line_text:
+                                    continue
+                                
+                                # Yêu cầu 2: Thay dấu chấm bằng gạch đầu dòng (-)
+                                if line_text.startswith('*') or line_text.startswith('-') or re.match(r'^\d+\.\s', line_text):
+                                    clean_text = re.sub(r'^[*-]\s*|^\d+\.\s*', '', line_text).strip()
+                                    p.text = clean_text
+                                    p.style = 'List Bullet' 
+                                else:
+                                    p.text = line_text
+                        
                         continue
             
-        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (Yêu cầu 1 & 2)
+        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG
+        # (Giữ nguyên logic căn giữa và gạch đầu dòng)
         
-        # Xử lý tiêu đề chính (I. Yêu cầu cần đạt, IV. ĐIỀU CHỈNH SAU BÀI DẠY)
+        # Xử lý tiêu đề chính 
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
             document.add_heading(clean_line, level=2)
             
-        # Xử lý tiêu đề con (Về kiến thức, Chuẩn bị của GV)
+        # Xử lý tiêu đề con
         elif line.startswith('**') and line.endswith('**'):
             clean_line = line.strip('**').strip()
-            # Nếu tiêu đề phụ là PHIẾU BÀI TẬP (Yêu cầu 1: Căn giữa)
-            if 'PHIẾU BÀI TẬP' in clean_line.upper():
+            if 'PHIẾU BÀI TẬP' in clean_line.upper() or 'ĐIỀU CHỈNH' in clean_line.upper():
                 p = document.add_heading(clean_line, level=3)
                 p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             else:
                 document.add_heading(clean_line, level=3)
             
-        # Xử lý gạch đầu dòng Markdown (Yêu cầu 2: Thay dấu chấm bằng gạch đầu dòng)
+        # Xử lý gạch đầu dòng Markdown 
         elif line.startswith('*') or line.startswith('-') or re.match(r'^\d+\.\s', line):
             clean_text = re.sub(r'^[*-]\s*|^\d+\.\s*', '', line).strip()
             document.add_paragraph(clean_text, style='List Bullet')
@@ -277,7 +291,18 @@ def create_word_document(markdown_text, lesson_title):
         # Xử lý văn bản thuần túy
         else:
             document.add_paragraph(line)
-
+            
+    # --- XỬ LÝ VIỀN CỦA HÀNG CUỐI CÙNG TRONG BẢNG (VIỀN DƯỚI) ---
+    if table and len(table.rows) > 1:
+        last_row_cells = table.rows[-1].cells
+        for cell in last_row_cells:
+            set_cell_border(cell, 
+                bottom={"val": "single", "sz": 12, "color": "auto"},
+                top={"val": "none"}, # Đảm bảo viền trên vẫn bị tắt
+                left={"val": "single", "sz": 12, "color": "auto"},
+                right={"val": "single", "sz": 12, "color": "auto"}
+            )
+            
     # Lưu tài liệu vào bộ nhớ (BytesIO)
     bio = BytesIO()
     document.save(bio)
@@ -391,6 +416,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
