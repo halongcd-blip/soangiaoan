@@ -7,7 +7,8 @@ from io import BytesIO
 # CÁC DÒNG IMPORT AN TOÀN VÀ CƠ BẢN NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-# KHÔNG IMPORT GÌ THÊM. CHÚNG TA SẼ TRUY CẬP Part QUA genai.types.Part
+# 🚨 QUAN TRỌNG: SỬ DỤNG CÚ PHÁP CŨ HƠN, ĐƯỢC HỖ TRỢ RỘNG RÃI HƠN
+from google.generativeai import types 
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -18,7 +19,6 @@ import google.generativeai as genai
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    # Nếu không chạy trên Streamlit Cloud, hiển thị lỗi để người dùng biết
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() 
 
@@ -28,7 +28,7 @@ genai.configure(api_key=API_KEY)
 # Khởi tạo mô hình AI 
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
-# Đây là "Prompt Gốc" (ĐÃ CẬP NHẬT YÊU CẦU OCR)
+# Đây là "Prompt Gốc" (Giữ nguyên yêu cầu OCR mạnh mẽ)
 PROMPT_GOC = """
 CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
@@ -157,9 +157,9 @@ if submit_button:
                 # Đọc file nhị phân
                 file_bytes = uploaded_file.read()
                 
-                # Tạo đối tượng Part cho file (ĐÃ SỬA LỖI - truy cập Part qua genai.types)
-                # Dùng cú pháp này để đảm bảo Part được tìm thấy
-                file_part = genai.types.Part.from_bytes( 
+                # Tạo đối tượng Part cho file 
+                # 🚨 SỬ DỤNG CÚ PHÁP types.Part.from_bytes, KHẮC PHỤC LỖI TỪ CÁC PHIÊN BẢN TRƯỚC
+                file_part = types.Part.from_bytes( 
                     data=file_bytes,
                     mime_type=uploaded_file.type
                 )
