@@ -188,18 +188,20 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 
                 st.markdown(cleaned_text) # Hiển thị văn bản đã được làm sạch
 
-            except Exception as e:
+           except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
- """
-st.sidebar.title("Giới thiệu")
-#... (Giữ nguyên phần sidebar)
-    Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
-    \n
-    Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
-    """
+# HẾT KHỐI TRY...EXCEPT Ở ĐÂY. KHÔNG CÓ DẤU NHÁY NÀO NỮA.
 
+st.sidebar.title("Giới thiệu")
+st.sidebar.info(
+    """
+    Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
+    
+    Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
+    """ # <-- Dấu """ đóng khối st.sidebar.info() phải nằm ở đây
 )
+
 
 
 
