@@ -124,17 +124,14 @@ ten_bai = st.text_input("4. Tên bài học / Chủ đề:", placeholder="Ví d�
 yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu cầu cần đạt ...", height=150)
 # ... (Phần nhập liệu của mon_hoc, lop, bo_sach, ten_bai, yeu_cau)
 
-# THÊM CODE NÀY VÀO PHẦN GIAO DIỆN CỦA BẠN:
+# 6. KHAI BÁO BIẾN CHO FILE UPLOADER (Cần nằm ở đây)
 uploaded_file = st.file_uploader(
-    "6. Tải Lên Ảnh/PDF trang Bài tập trong SGK (Nếu cần)", 
+    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tùy chọn)", 
     type=["pdf", "png", "jpg", "jpeg"]
 )
 
-
-
-# ... (Tiếp theo là nút bấm tạo giáo án)
-# Thêm Checkbox cho tùy chọn Phiếu Bài Tập
-tao_phieu = st.checkbox("Tạo kèm Phiếu bài tập")
+# 7. KHAI BÁO BIẾN CHO CHECKBOX
+tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False)
 
 # Nút bấm để tạo giáo án
 if st.button("🚀 Tạo Giáo án ngay!"):
@@ -204,6 +201,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
