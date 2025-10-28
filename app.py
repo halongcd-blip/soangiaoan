@@ -4,7 +4,7 @@ import time
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT CHÍNH XÁC CHO GÓI 'google-genai'
 # -----------------------------------------------------------------
-import google.genai as genai # <-- SỬA LỖI ModuleNotFoundError
+import google.genai as genai # <-- Tên module MỚI (google.genai)
 from google.genai.types import Part # <-- Cần cho tính năng upload file
 # -----------------------------------------------------------------
 
@@ -19,12 +19,11 @@ except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() # Dừng ứng dụng
 
-# Khởi tạo CLIENT (Phương pháp chuẩn cho gói google-genai)
+# Khởi tạo CLIENT (Đây là phương pháp chuẩn)
 client = genai.Client(api_key=API_KEY)
 
-# Khởi tạo MODEL BẰNG CÁCH TRUY CẬP DICTIONARY (Cú pháp ổn định)
-# Đây là cách duy nhất để tránh lỗi GenerativeModel và lỗi .get()
-model = client.models["gemini-2.5-flash"] 
+# Khởi tạo MODEL: SỬ DỤNG PHƯƠNG THỨC .get() (Đây là FIX cho lỗi TypeError)
+model = client.models.get("gemini-2.5-flash") 
 
 # Đây là "Prompt Gốc"... (Tiếp tục code của bạn)
 # Đây là "Prompt Gốc"...
@@ -203,6 +202,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
