@@ -185,7 +185,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # 4. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
                 st.balloons() 
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
-                
+                st.markdown(response.text) # <--- Dòng này phải sử dụng `.text`
                 # ... (Các dòng làm sạch text)
 
             except Exception as e:
@@ -200,6 +200,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
