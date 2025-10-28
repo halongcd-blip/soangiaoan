@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import time
-from google.generativeai.types import Part # Cần thiết cho việc xử lý file
+from google.generativeai.types import Part # <--- Lấy thẳng đối tượng 'Part'
 # -----------------------------------------------------------------
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
@@ -194,6 +194,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
