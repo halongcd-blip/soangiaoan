@@ -13,19 +13,21 @@ from docx.shared import Inches
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-# Lớp Part nằm trực tiếp ở thư viện gốc
 from google.generativeai import types
+
+# 🚨 SỬA LỖI QUAN TRỌNG: ĐĂNG KÝ NAMESPACE 'w' TRƯỚC KHI SỬ DỤNG qn('w:...')
+from docx.oxml.ns import _register_for_tag
+_register_for_tag('w:topBdr') 
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT
+# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT (GIỮ NGUYÊN)
 # -----------------------------------------------------------------
 
 # LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    # Dòng này sẽ hiển thị lỗi nếu không tìm thấy Key
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() 
 
@@ -35,7 +37,7 @@ genai.configure(api_key=API_KEY)
 # Khởi tạo mô hình AI 
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
-# Đây là "Prompt Gốc" (giữ nguyên yêu cầu định dạng phức tạp)
+# Đây là "Prompt Gốc" (GIỮ NGUYÊN)
 PROMPT_GOC = """
 CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
@@ -114,7 +116,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ SỬA LỖI set_cell_border NOT DEFINED)
+# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ FIX LỖI NAMESPACE 'w')
 # -----------------------------------------------------------------
 
 # Các mẫu regex để nhận diện các loại tiêu đề
@@ -127,7 +129,7 @@ def clean_content(text):
     # Loại bỏ triệt để dấu ** thừa
     return text.replace('**', '')
 
-# --- HÀM HỖ TRỢ TẮT/BẬT VIỀN (FIX LỖI set_cell_border) ---
+# --- HÀM HỖ TRỢ TẮT/BẬT VIỀN (ĐÃ FIX LỖI set_cell_border NOT DEFINED) ---
 def set_cell_border(cell, **kwargs):
     """
     Tùy chỉnh viền của một ô (cell) trong Word.
@@ -329,7 +331,7 @@ def create_word_document(markdown_text, lesson_title):
     return bio
 
 # -----------------------------------------------------------------
-# 3. KHỐI LOGIC CHẠY STREAMLIT (UI)
+# 3. KHỐI LOGIC CHẠY STREAMLIT (UI) - GIỮ NGUYÊN
 # -----------------------------------------------------------------
 
 st.title("🤖 Giáo án thông minh - 🚀 [App Tên Bạn]")
