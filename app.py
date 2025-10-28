@@ -129,9 +129,9 @@ def clean_content(text):
 
 def create_word_document(markdown_text, lesson_title):
     """
-    Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng,
-    đảm bảo tiêu đề hoạt động và tiêu đề phụ nằm trọn trong Cột Giáo viên (đã merge) 
-    và chỉ có đường kẻ ngang phân cách hoạt động lớn.
+    Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng.
+    - Đảm bảo Tiêu đề Hoạt động và Tiêu đề Phụ (a, b...) được gộp cột (merge cell).
+    - Ngăn chặn việc tạo quá nhiều đường kẻ ngang.
     """
     document = Document()
     
@@ -143,6 +143,7 @@ def create_word_document(markdown_text, lesson_title):
     lines = markdown_text.split('\n')
     is_in_table_section = False
     table = None
+    current_row = None # Biến theo dõi hàng hiện tại (để gom nội dung vào)
     
     for line in lines:
         line = line.strip()
@@ -152,15 +153,12 @@ def create_word_document(markdown_text, lesson_title):
         # 1. PHÁT HIỆN BẢNG (III. Các hoạt động dạy học chủ yếu)
         if re.match(r'\|.*Hoạt động của giáo viên.*\|.*Hoạt động của học sinh.*\|', line, re.IGNORECASE):
             is_in_table_section = True
-            
             document.add_heading("III. Các hoạt động dạy học chủ yếu", level=2)
             
             # Tạo bảng 2 cột
             table = document.add_table(rows=1, cols=2)
             table.style = 'Table Grid'
             table.autofit = False
-            
-            # Thiết lập độ rộng cột
             table.columns[0].width = Inches(3.5) 
             table.columns[1].width = Inches(3.5)
             
@@ -168,6 +166,9 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells = table.rows[0].cells
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
+            
+            # Khởi tạo hàng đầu tiên ngay sau header để chứa nội dung
+            current_row = table.add_row().cells 
             
             continue
             
@@ -184,7 +185,7 @@ def create_word_document(markdown_text, lesson_title):
                     document.add_heading(line.strip().strip('**'), level=2)
                 continue
             
-            # Xử lý các dòng dữ liệu
+            # Xử lý các dòng dữ liệu Markdown
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
@@ -205,29 +206,29 @@ def create_word_document(markdown_text, lesson_title):
                         # Nội dung tiêu đề đã được làm sạch
                         title = gv_content.strip('**').strip()
 
-                        # Thêm hàng mới
-                        row_cells = table.add_row().cells
-                        row_cells[0].merge(row_cells[1])
-                        
+                        # --- LOGIC QUAN TRỌNG: CHỈ TẠO HÀNG MỚI ĐỂ PHÂN CÁCH (ĐƯỜNG KẺ NGANG) ---
+                        current_row = table.add_row().cells # <--- TẠO ĐƯỜNG KẺ NGANG ĐỂ PHÂN CÁCH HOẠT ĐỘNG TRƯỚC
+                        current_row[0].merge(current_row[1]) # Gộp cột cho hàng tiêu đề
+
                         # Thêm văn bản tiêu đề vào cột 0 (đã merge)
-                        p = row_cells[0].add_paragraph(title)
+                        p = current_row[0].add_paragraph(title)
                         p.runs[0].bold = True 
                         
-                        # Chỉ có đường kẻ ngang sau các hoạt động lớn (1, 2, 3...)
-                        if is_main_header:
-                             # Logic này yêu cầu không có đường kẻ ngang sau mỗi tiêu đề,
-                             # mà đường kẻ ngang tự động sinh ra giữa các hàng.
-                             # Để chỉ có kẻ ngang sau hoạt động lớn, ta phải xử lý lại nội dung.
-                             # Tạm thời chấp nhận đường kẻ ngang tự động, tập trung vào Merge Cell.
-                             pass
+                        # Cần tạo thêm một hàng mới ngay sau tiêu đề để chứa nội dung, 
+                        # điều này sẽ tạo ra đường kẻ ngang phân cách tiêu đề với nội dung bên dưới.
+                        current_row = table.add_row().cells 
                         
                         continue 
                         
                     # --- XỬ LÝ NỘI DUNG THƯỜNG ---
                     else:
-                        row_cells = table.add_row().cells
-                        
-                        # Cột 0 (GV) và Cột 1 (HS)
+                        # Nội dung thường sẽ được gom vào hàng hiện tại (current_row)
+                        # Điều này ngăn cản việc tạo ra đường kẻ ngang liên tục.
+                        if current_row is None:
+                            # Trường hợp hiếm: Nếu chưa có hàng nào được tạo sau header
+                            current_row = table.add_row().cells 
+
+                        # Xử lý nội dung hai cột (GV và HS)
                         for cell_index, cell_content in enumerate([gv_content, hs_content]):
                             
                             content_lines = cell_content.split('\n')
@@ -239,14 +240,13 @@ def create_word_document(markdown_text, lesson_title):
                                 # Loại bỏ định dạng ** nếu có
                                 content_line = content_line.strip('**').strip()
                                 
-                                # Xử lý gạch đầu dòng
+                                # Xử lý gạch đầu dòng (thêm vào ô hiện tại)
                                 if content_line.startswith('*') or content_line.startswith('-'):
-                                    # Dùng phong cách List Bullet để tạo gạch đầu dòng
-                                    p = row_cells[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
+                                    p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
                                 
-                                # Văn bản thường
+                                # Văn bản thường (thêm vào ô hiện tại)
                                 else:
-                                    row_cells[cell_index].add_paragraph(content_line)
+                                    current_row[cell_index].add_paragraph(content_line)
                                 
                     continue
             
@@ -382,6 +382,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
