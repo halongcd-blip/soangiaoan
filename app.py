@@ -185,8 +185,20 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # 4. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
                 st.balloons() 
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
-                st.markdown(response.text) # <--- Dòng này phải sử dụng `.text`
-                # ... (Các dòng làm sạch text)
+# LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
+                # Tìm vị trí bắt đầu của giáo án (thường là "I. Yêu cầu cần đạt")
+                # Sau đó, cắt bỏ phần thừa ở đầu.
+                full_text = response.text
+                start_index = full_text.find("I. Yêu cầu cần đạt") # Tìm điểm bắt đầu
+                
+                if start_index != -1:
+                    # Nếu tìm thấy, cắt từ đó trở đi
+                    cleaned_text = full_text[start_index:]
+                else:
+                    # Nếu không tìm thấy, hiển thị toàn bộ nội dung (bao gồm cả lỗi)
+                    cleaned_text = full_text
+
+                st.markdown(cleaned_text)
 
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
@@ -200,6 +212,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
