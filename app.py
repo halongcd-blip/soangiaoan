@@ -17,8 +17,9 @@ except:
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
 
-# Khởi tạo mô hình AI (chúng ta dùng gemini-2.5-flash)
-model = genai.GenerativeModel(model_name="gemini-2.5-flash")
+# THAY THẾ DÒNG KHAI BÁO MODEL
+client = genai.Client(api_key=API_KEY)
+model = client.models.get(name='gemini-2.5-flash')
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
 # Toàn bộ "bộ não" sư phạm nằm ở đây
@@ -201,6 +202,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
