@@ -3,6 +3,7 @@ import time
 from docx import Document
 from io import BytesIO
 import re # Cần để làm sạch Markdown
+from docx.shared import Inches
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
@@ -113,38 +114,113 @@ Hãy bắt đầu tạo giáo án.
 # ==================================================================
 # KẾT THÚC PHẦN PROMPT MỚI
 # ==================================================================
-def create_word_document(markdown_text):
-    """Tạo đối tượng Word (docx) từ nội dung Markdown và trả về dưới dạng bytes."""
+from docx import Document
+from docx.shared import Inches
+from io import BytesIO
+import re
+
+def create_word_document(markdown_text, lesson_title):
+    """
+    Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng.
+    """
     document = Document()
     
-    # 1. Tách nội dung theo dòng
-    lines = markdown_text.split('\n')
+    # 1. THÊM TIÊU ĐỀ CHÍNH (Heading 1)
+    if lesson_title:
+        document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
+        document.add_paragraph() # Xuống dòng
     
-    # 2. Xử lý từng dòng để định dạng
-    for line in lines:
+    lines = markdown_text.split('\n')
+    is_in_table_section = False
+    
+    for i, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
-        
-        # Xử lý tiêu đề Markdown (ví dụ: I. Yêu cầu cần đạt)
-        if re.match(r'^[IVX\d]+\.\s', line):
-            document.add_heading(line, level=2) # Dùng level 2 cho các tiêu đề chính
-        
-        # Xử lý tiêu đề con (ví dụ: 1. Hoạt động Mở đầu)
-        elif line.startswith('**') and line.endswith('**'):
-            document.add_heading(line.strip('**'), level=3) # Dùng level 3 cho tiêu đề phụ
             
-        # Xử lý gạch đầu dòng Markdown (* hoặc -)
+        # 1. PHÁT HIỆN BẢNG (III. Các hoạt động dạy học chủ yếu)
+        if line.startswith("| Hoạt động của giáo viên"):
+            # Bắt đầu cấu trúc bảng
+            is_in_table_section = True
+            
+            # Thêm tiêu đề mục chính trước khi tạo bảng
+            document.add_heading("III. Các hoạt động dạy học chủ yếu", level=2)
+            
+            # Tạo bảng 2 cột
+            table = document.add_table(rows=1, cols=2)
+            table.style = 'Table Grid'
+            table.autofit = False
+            table.columns[0].width = Inches(3) # Căn chỉnh độ rộng cột
+            table.columns[1].width = Inches(3)
+            
+            # Thiết lập headers
+            hdr_cells = table.rows[0].cells
+            hdr_cells[0].text = "Hoạt động của giáo viên"
+            hdr_cells[1].text = "Hoạt động của học sinh"
+            
+            continue
+
+        # 2. XỬ LÝ NỘI DUNG BÊN TRONG BẢNG
+        if is_in_table_section:
+            # Bỏ qua dòng phân cách bảng (| :--- | :--- |)
+            if line.startswith('| :---'):
+                continue
+            
+            # Xử lý các dòng dữ liệu
+            if line.startswith('|') and len(line.split('|')) >= 3:
+                # Tách nội dung hai cột (bỏ qua dấu | đầu và cuối)
+                cells_content = [c.strip() for c in line.split('|')[1:-1]]
+                
+                if len(cells_content) == 2:
+                    row_cells = table.add_row().cells
+                    
+                    # Xử lý nội dung từng cell
+                    for cell_index, cell_content in enumerate(cells_content):
+                        # Tách nội dung bên trong cell theo các dòng Markdown (* hoặc -)
+                        content_lines = cell_content.split('\n')
+                        for content_line in content_lines:
+                            content_line = content_line.strip()
+                            if not content_line: continue
+                            
+                            # Loại bỏ định dạng ** (tiêu đề con như **1. Hoạt động Mở đầu**)
+                            if content_line.startswith('**') and content_line.endswith('**'):
+                                p = row_cells[cell_index].add_paragraph(content_line.strip('**'))
+                                p.runs[0].bold = True
+                            
+                            # Xử lý gạch đầu dòng
+                            elif content_line.startswith('*') or content_line.startswith('-'):
+                                p = row_cells[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
+                            
+                            # Văn bản thường
+                            else:
+                                row_cells[cell_index].add_paragraph(content_line)
+                                
+                    continue
+            
+            # Kiểm tra xem bảng đã kết thúc chưa (khi gặp tiêu đề mục lớn khác)
+            if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
+                is_in_table_section = False # Thoát khỏi chế độ xử lý bảng
+
+        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (Logic xử lý tiêu đề gốc)
+        
+        # Xử lý tiêu đề chính (I. Yêu cầu cần đạt, IV. ĐIỀU CHỈNH SAU BÀI DẠY)
+        if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
+            # Loại bỏ ** nếu có và thêm Heading 2
+            clean_line = line.strip().strip('**')
+            document.add_heading(clean_line, level=2)
+            
+        # Xử lý tiêu đề con (Về kiến thức, Chuẩn bị của GV)
+        elif line.startswith('**') and line.endswith('**'):
+            document.add_heading(line.strip('**'), level=3)
+            
+        # Xử lý gạch đầu dòng Markdown
         elif line.startswith('*') or line.startswith('-'):
             document.add_paragraph(line.lstrip('*- ').strip(), style='List Bullet')
-        
-        # Xử lý bảng (Đơn giản hóa: Chuyển bảng Markdown thành văn bản thuần)
-        elif line.startswith('|') and len(line.split('|')) > 2:
-            document.add_paragraph(line) # Đưa nguyên dòng bảng vào
-        
+            
         # Xử lý văn bản thuần túy
         else:
             document.add_paragraph(line)
+
 
     # Lưu tài liệu vào bộ nhớ (BytesIO)
     bio = BytesIO()
@@ -237,11 +313,10 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     # Nếu không tìm thấy, hiển thị toàn bộ nội dung (bao gồm cả lỗi)
                     cleaned_text = full_text
 
-                st.markdown(cleaned_text)
-
+                st.markdown(cleaned_text) 
                 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
-                word_bytes = create_word_document(cleaned_text)
+                word_bytes = create_word_document(cleaned_text, ten_bai) # <--- ĐÃ THÊM ten_bai
                 
                 st.download_button(
                     label="⬇️ Tải về Giáo án (Word)",
@@ -261,6 +336,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
