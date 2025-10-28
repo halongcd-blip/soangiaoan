@@ -2,12 +2,12 @@ import streamlit as st
 import time
 
 # -----------------------------------------------------------------
-# CÁC DÒNG IMPORT CHÍNH XÁC VÀ ỔN ĐỊNH NHẤT
+# CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
-# Dùng tên module MỚI để giải quyết lỗi ModuleNotFoundError (dòng 8)
-import google.genai as genai 
-# Phải import Part để xử lý file, và nó nằm ở đường dẫn này trong gói mới.
-from google.genai.types import Part 
+# Dùng import này để lấy đủ các thuộc tính GenerativeModel
+import google.generativeai as genai
+# Cần import TYPES để xử lý file, và nó nằm ở đường dẫn này trong gói cũ
+import google.generativeai.types as types 
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -21,11 +21,11 @@ except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() # Dừng ứng dụng
 
-# KHỞI TẠO CLIENT (Cú pháp chuẩn cho google-genai)
-client = genai.Client(api_key=API_KEY)
+# Cấu hình API key cho thư viện Gemini
+genai.configure(api_key=API_KEY)
 
-# KHỞI TẠO MODEL (Sử dụng phương thức .get() để tránh lỗi TypeError)
-model = client.models.get("gemini-2.5-flash")
+# Khởi tạo mô hình AI (Cú pháp này đã được chứng minh là ổn định)
+model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
 # Đây là "Prompt Gốc"... (Tiếp tục code của bạn)
 # Đây là "Prompt Gốc"...
@@ -165,7 +165,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     file_bytes = uploaded_file.read() # <--- 12 spaces
                     
                     # TẠO ĐỐI TƯỢNG PART CỦA GEMINI API
-                    file_part = Part.from_bytes( # <--- 12 spaces
+                    file_part = types.Part.from_bytes( # <--- 12 spaces
                         data=file_bytes,
                         mime_type=uploaded_file.type
                     ) # <--- 12 spaces
@@ -204,6 +204,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
