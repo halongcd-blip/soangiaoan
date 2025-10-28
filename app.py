@@ -7,59 +7,114 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from io import BytesIO
 import re
-from io import BytesIO
 
 from docx.shared import Inches
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-# Lớp Part nằm trực tiếp ở thư viện gốc, không qua module 'types'
+# Lớp Part nằm trực tiếp ở thư viện gốc
 from google.generativeai import types
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI
+# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT
 # -----------------------------------------------------------------
 
 # LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
+    # Dòng này sẽ hiển thị lỗi nếu không tìm thấy Key
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
-    st.stop() # Dừng ứng dụng
+    st.stop() 
 
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
 
-# Khởi tạo mô hình AI (Cú pháp này hoàn toàn đúng với gói google-generativeai)
+# Khởi tạo mô hình AI 
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
-# Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
-# Toàn bộ "bộ não" sư phạm nằm ở đây
+# Đây là "Prompt Gốc" (giữ nguyên yêu cầu định dạng phức tạp)
 PROMPT_GOC = """
-CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy đảm bảo các phần sau:
-1. TIÊU ĐỀ: Các tiêu đề chính (Kế hoạch bài dạy, PHIẾU BÀI TẬP) phải được TÔ ĐEN (sử dụng **...**), và các tiêu đề con (Về kiến thức, Năng lực chung) phải được TÔ ĐEN (sử dụng **...**).
-2. BẢNG HOẠT ĐỘNG:
-    a) Phải có Bảng Hoạt động (Hoạt động của giáo viên | Hoạt động của học sinh).
-    b) Các nội dung (Hoạt động 1, Hoạt động a)...) trong bảng phải được phân tách bằng DÒNG NỘI DUNG MỚI, KHÔNG DÙNG THẺ <br/>.
-    c) Phải duy trì sự đối ứng (đồng bộ) giữa cột Giáo viên và Học sinh, mỗi câu/ý của GV phải đối ứng với câu/ý của HS trên cùng một hàng ngang.
-    d) KHÔNG SỬ DỤNG DẤU ** trong nội dung thường.
-    e) Các mục list (gạch đầu dòng) phải sử dụng ký tự Markdown (-) hoặc (*).
+CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
-Dựa trên các thông tin sau, hãy tạo KẾ HOẠCH BÀI DẠY (Giáo án) đầy đủ theo cấu trúc chuẩn.
-- Môn học: {mon_hoc}
-- Lớp: {lop}
-- Bộ sách: {bo_sach}
-- Tên bài giảng: {ten_bai}
-- Yêu cầu kiến thức (dựa trên phân phối chương trình): {yeu_cau}
-- Yêu cầu cho Phiếu bài tập: {yeu_cau_phieu}
+Bạn là một chuyên gia giáo dục Tiểu học hàng đầu Việt Nam, am hiểu sâu sắc Chương trình GDPT 2018 và kỹ thuật thiết kế Kế hoạch Bài Dạy (giáo án) theo Công văn 2345.
 
-TUYỆT ĐỐI CHỈ TRẢ VỀ NỘI DUNG GIÁO ÁN, KHÔNG TRẢ VỀ BẤT KỲ LỜI GIỚI THIỆU HAY GIẢI THÍCH NÀO.
+Nhiệm vụ của bạn là soạn một Kế hoạch bài dạy chi tiết, sáng tạo, tập trung vào phát triển năng lực và phẩm chất.
+
+DỮ LIỆU ĐẦU VÀO:
+1.  **Môn học:** {mon_hoc}
+2.  **Lớp:** {lop}
+3.  **Bộ sách:** {bo_sach}
+4.  **Tên bài học/Chủ đề:** {ten_bai}
+5.  **Yêu cầu cần đạt (Lấy từ Chương trình môn học):** {yeu_cau}
+7.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
+
+YÊU CẦU VỀ ĐỊNH DẠNG:
+Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
+
+**I. Yêu cầu cần đạt**
+(Phát biểu cụ thể học sinh thực hiện được việc gì; vận dụng được những gì, phẩm chất, năng lực gì.)
+1.  **Về kiến thức:** (Bám sát {yeu_cau})
+2.  **Về năng lực:** (Năng lực chung: Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo; Năng lực đặc thù của môn {mon_hoc})
+3.  **Về phẩm chất:** (Chọn 1-2 trong 5 phẩm chất: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm)
+
+**II. Đồ dùng dạy học**
+(Nêu các thiết bị, học liệu được sử dụng trong bài dạy. Nếu Yêu cầu tạo phiếu bài tập là CÓ, phải nhắc đến Phiếu bài tập trong mục này.)
+1.  **Chuẩn bị của giáo viên (GV)::** (Tranh ảnh, video, phiếu học tập, link game...)
+2.  **Chuẩn bị của học sinh (HS):** (SGK, Vở bài tập, bút màu...)
+
+**III. Các hoạt động dạy học chủ yếu**
+**QUY TẮC CỰC KỲ QUAN TRỌNG:** Toàn bộ nội dung của mục 3 này PHẢI được trình bày trong **MỘT BẢNG MARKDOWN DUY NHẤT** có 2 cột.
+**QUY TẮC BẮT BUỘC SỐ 2 (NỘI DUNG):** Nội dung trong từng ô phải được trình bày dưới dạng gạch đầu dòng MARKDOWN (dấu * hoặc -) để xuống dòng.
+
+| Hoạt động của giáo viên | Hoạt động của học sinh |
+| :--- | :--- |
+| **1. Hoạt động Mở đầu (Khởi động, Kết nối)** | **1. Hoạt động Mở đầu (Khởi động, Kết nối)** |
+| *Mục tiêu: Tạo tâm thế vui vẻ, hứng thú.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các hoạt động tương tác của HS) |
+| **2. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** | **2. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** |
+| *Mục tiêu: (Bám sát {yeu_cau} để hình thành kiến thức mới)* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS quan sát, thảo luận) |
+| **3. Hoạt động Luyện tập, Thực hành** | **3. Hoạt động Luyện tập, Thực hành** |
+| *Mục tiêu: Áp dụng kiến thức, rèn kỹ năng. Nếu yeu_cau_phieu là CÓ, GV phải giao Phiếu bài tập trong hoạt động này.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS thực hành cá nhân/nhóm) |
+| **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** | **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** |
+| *Mục tiêu: Liên hệ thực tế, củng cố bài.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS trả lời, cam kết hành động) |
+
+---
+
+**PHẦN IV. ĐIỀU CHỈNH SAU BÀI DẠY (NẾU CÓ)**
+*(Đây là phần để trống để giáo viên ghi chú lại sau khi thực tế giảng dạy)*
+1.  **Về nội dung, kiến thức:**
+    * ......................................................................
+    * ......................................................................
+2.  **Về phương pháp, kỹ thuật tổ chức:**
+    * ......................................................................
+    * ......................................................................
+3.  **Về học sinh (những khó khăn, điểm cần lưu ý):**
+    * ......................................................................
+    * ......................................................................
+
+---
+
+**PHẦN V. PHIẾU BÀI TẬP (NẾU CÓ)**
+(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 6 `{yeu_cau_phieu}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này và không đề cập gì đến nó.)
+
+- Nếu `{yeu_cau_phieu}` là 'CÓ':
+- Hãy thiết kế một Phiếu bài tập (Worksheet) ngắn gọn, bám sát nội dung của **Hoạt động 3: Luyện tập / Thực hành**.
+- Phiếu phải được trình bày sinh động, vui nhộn, phù hợp với học sinh tiểu học (ví dụ: dùng emojis 🌟, 🦋, 🖍️, 🐝, lời dẫn thân thiện, có khung viền đơn giản).
+- Đặt tên phiếu rõ ràng (ví dụ: PHIẾU BÀI TẬP - BÀI: {ten_bai}).
+- Bao gồm 2-3 bài tập nhỏ (ví dụ: nối, điền từ, khoanh tròn).
+
+---
+Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ SỬA LỖI set_cell_border)
+# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ SỬA LỖI set_cell_border NOT DEFINED)
 # -----------------------------------------------------------------
 
 # Các mẫu regex để nhận diện các loại tiêu đề
@@ -69,10 +124,10 @@ SUB_ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)([a-z]\)\s.*?)(\*\*|)\s*'
 # Loại bỏ mọi trường hợp "Cách tiến hành" và dấu ** thừa
 def clean_content(text):
     text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
-    # Yêu cầu: Loại bỏ triệt để dấu ** thừa
+    # Loại bỏ triệt để dấu ** thừa
     return text.replace('**', '')
 
-# --- HÀM HỖ TRỢ TẮT/BẬT VIỀN (ĐÃ FIX LỖI set_cell_border NOT DEFINED) ---
+# --- HÀM HỖ TRỢ TẮT/BẬT VIỀN (FIX LỖI set_cell_border) ---
 def set_cell_border(cell, **kwargs):
     """
     Tùy chỉnh viền của một ô (cell) trong Word.
@@ -136,9 +191,8 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
             
-            # Tùy chỉnh viền cho Header
+            # Tùy chỉnh viền cho Header (Viền trên ngoài cùng và viền dưới phân cách)
             for cell in hdr_cells:
-                # Viền trên (ngoài cùng) và dưới (phân cách header)
                 set_cell_border(cell, 
                     top={"val": "single", "sz": 12, "color": "auto"},
                     bottom={"val": "single", "sz": 12, "color": "auto"},
@@ -153,6 +207,7 @@ def create_word_document(markdown_text, lesson_title):
             if line.startswith('| :---'):
                 continue
             
+            # Thoát khỏi bảng khi gặp tiêu đề lớn (PHẦN IV)
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
                 is_in_table_section = False
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
@@ -180,7 +235,7 @@ def create_word_document(markdown_text, lesson_title):
                         p = row_cells[0].add_paragraph(title)
                         p.runs[0].bold = True 
                         
-                        # --- XỬ LÝ VIỀN CHO HÀNG TIÊU ĐỀ HOẠT ĐỘNG ---
+                        # --- XỬ LÝ VIỀN CHO HÀNG TIÊU ĐỀ HOẠT ĐỘNG (Kẻ ngang phân cách) ---
                         set_cell_border(row_cells[0], 
                             top={"val": "single", "sz": 12, "color": "auto"}, # Viền trên
                             bottom={"val": "single", "sz": 12, "color": "auto"}, # Viền dưới
@@ -192,12 +247,11 @@ def create_word_document(markdown_text, lesson_title):
                         
                     # --- XỬ LÝ NỘI DUNG THƯỜNG ---
                     else:
-                        # TẠO HÀNG MỚI ĐỂ ĐẢM BẢO ĐỒNG BỘ NỘI DUNG GV - HS
+                        # TẠO HÀNG MỚI CHO NỘI DUNG GV-HS ĐỒNG BỘ
                         row_cells = table.add_row().cells 
                         
-                        # --- TẮT VIỀN NGANG GIỮA CÁC HÀNG NỘI DUNG ---
+                        # --- TẮT VIỀN NGANG GIỮA CÁC HÀNG NỘI DUNG (ĐÃ SỬA LỖI KẺ NGANG THỪA) ---
                         for cell in row_cells:
-                            # Chỉ giữ viền đứng giữa và viền ngoài (nếu là viền ngoài cùng)
                             set_cell_border(cell, 
                                 top={"val": "none"}, 
                                 bottom={"val": "none"},
@@ -219,7 +273,7 @@ def create_word_document(markdown_text, lesson_title):
                                 if not line_text:
                                     continue
                                 
-                                # Yêu cầu: Buộc sử dụng gạch đầu dòng (-) và loại bỏ số/ký tự list cũ
+                                # Xử lý gạch đầu dòng (buộc dùng List Bullet cho các mục list)
                                 if line_text.startswith('*') or line_text.startswith('-') or re.match(r'^\d+\.\s', line_text):
                                     clean_text = re.sub(r'^[*-]\s*|^\d+\.\s*', '', line_text).strip()
                                     p.text = clean_text
@@ -259,10 +313,10 @@ def create_word_document(markdown_text, lesson_title):
     if table and len(table.rows) > 1:
         last_row_cells = table.rows[-1].cells
         for cell in last_row_cells:
-            # Chỉ thêm viền dưới
+            # Chỉ thêm viền dưới để đóng bảng
             set_cell_border(cell, 
                 bottom={"val": "single", "sz": 12, "color": "auto"},
-                # Đảm bảo viền trên vẫn bị tắt (để không tạo kẻ ngang giữa hàng nội dung)
+                # Đảm bảo viền trên vẫn bị tắt
                 top={"val": "none"}, 
                 left={"val": "single", "sz": 12, "color": "auto"},
                 right={"val": "single", "sz": 12, "color": "auto"}
@@ -275,10 +329,8 @@ def create_word_document(markdown_text, lesson_title):
     return bio
 
 # -----------------------------------------------------------------
-# 3. KHỐI LOGIC CHẠY STREAMLIT (KHÔNG THAY ĐỔI)
+# 3. KHỐI LOGIC CHẠY STREAMLIT (UI)
 # -----------------------------------------------------------------
-
-# (Phần này giữ nguyên, dùng cho logic gọi AI và giao diện)
 
 st.title("🤖 Giáo án thông minh - 🚀 [App Tên Bạn]")
 
@@ -297,7 +349,7 @@ with st.form(key='giáo_án_form'):
     st.subheader("💡 Yêu cầu chi tiết:")
     yeu_cau = st.text_area(
         "Yêu cầu về kiến thức/nội dung bài giảng (Dán nội dung từ PPCT hoặc sách giáo khoa vào đây):",
-        "Đọc đúng, trôi chảy toàn bài thơ. Hiểu được nội dung bài thơ: Ngày hôm qua không mất đi mà hóa thành những điều có ích nếu chúng ta biết quý trọng và sử dụng thời gian một cách hiệu quả."
+        "Đọc đúng, trôi chảy toàn bài thơ. Hiểu được nội dung bài thơ: Ngày hôm qua không mất đi mà hóa thành những điều có ích."
     )
     
     yeu_cau_phieu_value = st.text_area(
@@ -350,7 +402,7 @@ if submit_button:
                 full_text = response.text
                 
                 # 4. Hiển thị kết quả
-                st.balloons() # Hiệu ứng bóng bay khi thành công
+                st.balloons() 
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
                 
                 # --- SỬA LỖI: Lọc bỏ phần giải thích thừa của AI (nếu có) ---
@@ -358,10 +410,8 @@ if submit_button:
                 start_index = full_text.find(start_marker)
 
                 if start_index != -1:
-                    # Nếu tìm thấy, cắt từ đó trở đi
                     cleaned_text = full_text[start_index:]
                 else:
-                    # Nếu không tìm thấy, hiển thị toàn bộ nội dung (bao gồm cả lỗi)
                     cleaned_text = full_text
 
                 st.markdown(cleaned_text) 
@@ -379,7 +429,7 @@ if submit_button:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
 
-# BẮT ĐẦU PHẦN SIDEBAR (PHẢI THỤT LỀ BẰNG 0)
+# BẮT ĐẦU PHẦN SIDEBAR
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
 """
@@ -388,4 +438,4 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động biên soạn giáo án Tiểu học theo các tiêu chí sư phạm.
 """
 )
-st.sidebar.image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-5c742Z_R6zB4u-7S5Q6w0x-X5uW1k6Fsg&s") # Thay thế bằng ảnh phù hợp
+st.sidebar.image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-5c742Z_R6zB4u-7S5Q6w0x-X5uW1k6Fsg&s")
