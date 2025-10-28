@@ -126,7 +126,7 @@ yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu 
 
 # THÊM CODE NÀY VÀO PHẦN GIAO DIỆN CỦA BẠN:
 uploaded_file = st.file_uploader(
-    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tùy chọn)", 
+    "6. Tải Lên Ảnh/PDF trang Bài tập trong SGK (Nếu cần)", 
     type=["pdf", "png", "jpg", "jpeg"]
 )
 
@@ -201,6 +201,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
