@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import time
-import google.generativeai.types as types # Cần thiết cho việc xử lý file
+from google.generativeai.types import Part # Cần thiết cho việc xử lý file
 # -----------------------------------------------------------------
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
@@ -155,7 +155,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     file_bytes = uploaded_file.read()
                     
                     # TẠO ĐỐI TƯỢNG PART CỦA GEMINI API (CẦN THƯ VIỆN TYPES)
-                    file_part = types.Part.from_bytes(
+                file_part = Part.from_bytes( # <--- MỚI: Chỉ gọi Part
                         data=file_bytes,
                         mime_type=uploaded_file.type
                     )
@@ -194,6 +194,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
