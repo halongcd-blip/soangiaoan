@@ -25,7 +25,7 @@ client = genai.Client(api_key=API_KEY)
 # Khởi tạo MODEL bằng cách gọi trực tiếp từ CLIENT (Cú pháp chuẩn)
 # Chúng ta sử dụng cách truy cập dictionary để tránh lỗi .get()
 model = client.models["gemini-2.5-flash"]
-)
+
 
 # Đây là "Prompt Gốc"... (Phần PROMPT_GOC giữ nguyên)
 
@@ -205,6 +205,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
