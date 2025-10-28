@@ -116,54 +116,26 @@ Hãy bắt đầu tạo giáo án.
 # ==================================================================
 from docx import Document
 from docx.shared import Inches
+from docx.enum.table import WD_TABLE_ALIGNMENT # Cần để căn giữa bảng
+from docx.oxml.ns import nsdecls
+from docx.oxml import parse_xml
 from io import BytesIO
 import re
 
-def create_word_document(markdown_text, lesson_title):
-    """
-    Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng.
-    """
-    document = Document()
-    
-    # 1. THÊM TIÊU ĐỀ CHÍNH (Heading 1)
-    if lesson_title:
-        document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
-        document.add_paragraph() # Xuống dòng
-    
-    lines = markdown_text.split('\n')
-    is_in_table_section = False
-    
-    for i, line in enumerate(lines):
-        line = line.strip()
-        if not line:
-            continue
-            
-        # 1. PHÁT HIỆN BẢNG (III. Các hoạt động dạy học chủ yếu)
-        if line.startswith("| Hoạt động của giáo viên"):
-            # Bắt đầu cấu trúc bảng
-            is_in_table_section = True
-            
-            # Thêm tiêu đề mục chính trước khi tạo bảng
-            document.add_heading("III. Các hoạt động dạy học chủ yếu", level=2)
-            
-            # Tạo bảng 2 cột
-            table = document.add_table(rows=1, cols=2)
-            table.style = 'Table Grid'
-            table.autofit = Falsefrom docx import Document
-from docx.shared import Inches
-from io import BytesIO
-import re
-
-# Khai báo hằng số để nhận diện tiêu đề hoạt động
-ACTIVITY_HEADERS = ["1. Hoạt động Mở đầu", "2. Hoạt động Khám phá", "3. Hoạt động Luyện tập", "4. Hoạt động Vận dụng"]
+# Hằng số để nhận diện tiêu đề hoạt động
+ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)(\d\.\sHoạt động.*?)(\*\*|)\s*', re.IGNORECASE)
 
 def create_word_document(markdown_text, lesson_title):
     """
     Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng,
-    đảm bảo tiêu đề hoạt động nằm trọn trong Cột Giáo viên.
+    đảm bảo tiêu đề hoạt động nằm trọn trong Cột Giáo viên (đã merge).
     """
     document = Document()
     
+    # Thiết lập phong cách cho tài liệu (Tùy chọn: Dùng Times New Roman nếu cần)
+    # document.styles['Normal'].font.name = 'Times New Roman'
+    # document.styles['Normal'].font.size = Pt(13)
+
     # 1. THÊM TIÊU ĐỀ CHÍNH
     if lesson_title:
         document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
@@ -190,11 +162,12 @@ def create_word_document(markdown_text, lesson_title):
             table = document.add_table(rows=1, cols=2)
             table.style = 'Table Grid'
             table.autofit = False
+            
             # Thiết lập độ rộng cột
             table.columns[0].width = Inches(3.5) 
             table.columns[1].width = Inches(3.5)
             
-            # Thiết lập headers
+            # Thiết lập headers (Hàng đầu tiên)
             hdr_cells = table.rows[0].cells
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
@@ -202,46 +175,49 @@ def create_word_document(markdown_text, lesson_title):
             continue
             
         # 2. XỬ LÝ NỘI DUNG BÊN TRONG BẢNG
-        if is_in_table_section:
+        if is_in_table_section and table is not None:
             # Bỏ qua dòng phân cách bảng (| :--- | :--- |)
             if line.startswith('| :---'):
                 continue
             
-            # Kiểm tra xem bảng đã kết thúc chưa (khi gặp tiêu đề mục lớn khác)
+            # Kiểm tra xem bảng đã kết thúc chưa
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
                 is_in_table_section = False
-                # Nếu đã thoát khỏi bảng, chuyển sang xử lý văn bản ngoài bảng
-                # Tiếp tục vòng lặp sau khi thoát khỏi bảng
+                # Nếu đã thoát khỏi bảng, tiếp tục xử lý văn bản ngoài bảng ở khối 3
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
                     document.add_heading(line.strip().strip('**'), level=2)
                 continue
             
-            # Xử lý các dòng dữ liệu (Duy trì logic thêm hàng)
-            if line.startswith('|') and len(line.split('|')) >= 3 and table is not None:
+            # Xử lý các dòng dữ liệu
+            if line.startswith('|') and len(line.split('|')) >= 3:
                 # Tách nội dung hai cột (bỏ qua dấu | đầu và cuối)
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
                 if len(cells_content) == 2:
                     
                     # --- Xử lý tiêu đề hoạt động (1, 2, 3...) ---
-                    is_activity_header = False
-                    # Tiêu đề hoạt động chỉ xuất hiện ở cột 0
-                    if re.match(r'^\d\.\s|\*\*\d\.\s', cells_content[0]):
-                        # Loại bỏ chữ "Cách tiến hành" và các ký tự thừa trong cột 0 (GV)
-                        cells_content[0] = re.sub(r'Cách tiến hành[:]*\s*', '', cells_content[0], flags=re.IGNORECASE)
-                        cells_content[0] = cells_content[0].strip('**').strip()
+                    match = ACTIVITY_HEADERS_PATTERN.match(cells_content[0])
+                    
+                    if match:
+                        # Tiêu đề được tìm thấy: Merge cột và tạo tiêu đề in đậm
                         
-                        # Chỉ tạo 1 hàng duy nhất cho tiêu đề, merge cột
+                        # Xử lý nội dung: Loại bỏ chữ "Cách tiến hành" và ký tự thừa
+                        title = match.group(2).strip()
+                        title = re.sub(r'Cách tiến hành[:]*\s*', '', title, flags=re.IGNORECASE).strip()
+
+                        # Thêm hàng mới
                         row_cells = table.add_row().cells
                         row_cells[0].merge(row_cells[1])
                         
                         # Thêm văn bản tiêu đề vào cột 0 (đã merge)
-                        p = row_cells[0].add_paragraph(cells_content[0])
-                        p.runs[0].bold = True # In đậm tiêu đề hoạt động
-                        is_activity_header = True
+                        p = row_cells[0].add_paragraph(title)
+                        p.runs[0].bold = True 
                         
-                    # Nếu không phải tiêu đề, tạo hàng dữ liệu bình thường
-                    if not is_activity_header:
+                        # Bỏ qua nội dung còn lại của dòng này (chỉ có tiêu đề)
+                        continue 
+                        
+                    # --- Xử lý nội dung hoạt động ---
+                    else:
                         row_cells = table.add_row().cells
                         
                         # Xử lý nội dung hai cột (GV và HS)
@@ -268,7 +244,7 @@ def create_word_document(markdown_text, lesson_title):
                                 else:
                                     row_cells[cell_index].add_paragraph(content_line)
                                 
-                    continue # Quay lại vòng lặp chính
+                    continue
             
         # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (Tiêu đề I, II, IV...)
         
@@ -403,6 +379,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
