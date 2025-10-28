@@ -5,7 +5,8 @@ import time
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-import google.generativeai.types as types # Cần thiết cho xử lý file Part
+# Lớp Part nằm trực tiếp ở thư viện gốc, không qua module 'types'
+from google.generativeai import types
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -160,11 +161,10 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     # Đọc bytes từ đối tượng file của Streamlit
                     file_bytes = uploaded_file.read() # <--- 12 spaces
                     
-                    # TẠO ĐỐI TƯỢNG PART CỦA GEMINI API
-                    file_part = types.Part.from_bytes( # <--- 12 spaces
-                        data=file_bytes,
-                        mime_type=uploaded_file.type
-                    ) # <--- 12 spaces
+                    file_part = types.Part.from_bytes( # Giữ nguyên cú pháp này
+                    data=file_bytes,
+                    mime_type=uploaded_file.type
+                    )
                     content.append(file_part) # <--- DÒNG 162: PHẢI CÓ 12 DẤU CÁCH
                 
                 # 2. Điền Prompt (6 biến số text)
@@ -200,6 +200,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
