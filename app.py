@@ -198,12 +198,13 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
-    """
-    Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
-    
-    Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
-    """
-) # <--- Đảm bảo dấu đóng ngoặc đơn ) không có khoảng trắng hoặc dòng trống phía trước
+"""
+Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
+
+Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
+"""
+)
+
 
 
 
