@@ -35,7 +35,12 @@ DỮ LIỆU ĐẦU VÀO:
 3.  **Bộ sách:** {bo_sach}
 4.  **Tên bài học/Chủ đề:** {ten_bai}
 5.  **Yêu cầu cần đạt (Lấy từ Chương trình môn học):** {yeu_cau}
-6.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
+# Thêm ô nhập liệu mới cho Bài tập SGK dưới dạng file
+uploaded_file = st.file_uploader(
+    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Nếu cần)", 
+    type=["pdf", "png", "jpg", "jpeg"]
+)
+7.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
 
 YÊU CẦU VỀ ĐỊNH DẠNG:
 Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
@@ -128,51 +133,68 @@ tao_phieu = st.checkbox("Tạo kèm Phiếu bài tập")
 
 # Nút bấm để tạo giáo án
 if st.button("🚀 Tạo Giáo án ngay!"):
+    # Lưu ý: Giả định bạn đã sửa logic kiểm tra API Key để dùng st.secrets
     if not mon_hoc or not lop or not bo_sach or not ten_bai or not yeu_cau:
         st.error("Vui lòng nhập đầy đủ cả 5 thông tin!")
-    elif API_KEY == "PASTE_KEY_CUA_BAN_VAO_DAY":
-        st.error("LỖI: Bạn chưa nhập API Key. Vui lòng kiểm tra lại file app.py")
+    # [BỎ: elif API_KEY == "PASTE_KEY_CUA_BAN_VAO_DAY":]
+
     else:
         with st.spinner("Trợ lý AI đang soạn giáo án, vui lòng chờ trong giây lát..."):
             try:
-                # Logic để xử lý checkbox
-                # Quyết định giá trị cho biến số thứ 6 dựa trên việc người dùng có tick vào ô hay không
+                # Logic cho Biến số Tùy chọn 1 (Tạo Phiếu Bài Tập)
                 yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
 
-                # 1. Điền 6 biến số vào "Prompt Gốc"
+                # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
+                content = []
+
+                # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
+                # Nếu có file được tải lên, thêm nó vào danh sách content
+                # (Lưu ý: Bạn phải khai báo uploaded_file ở phần giao diện người dùng)
+                if uploaded_file is not None:
+                    # Gán file vào biến, Gemini API sẽ tự xử lý định dạng (image/pdf)
+                    content.append(uploaded_file)
+
+                # 2. Điền Prompt (6 biến số text)
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
                     lop=lop,
                     bo_sach=bo_sach,
                     ten_bai=ten_bai,
                     yeu_cau=yeu_cau,
-                    yeu_cau_phieu=yeu_cau_phieu_value 
+                    yeu_cau_phieu=yeu_cau_phieu_value # Đã thêm biến số thứ 6
                 )
+                # Thêm Prompt vào danh sách Content (luôn luôn có)
+                content.append(final_prompt)
 
-                # 2. Gọi AI
-                response = model.generate_content(final_prompt)
+                # 3. Gọi AI với danh sách nội dung (content)
+                # Hàm này hoạt động cho cả trường hợp có file (content có 2 phần tử) 
+                # và không có file (content chỉ có 1 phần tử là Prompt)
+                response = model.generate_content(content)
 
-             # 3. Hiển thị kết quả
+                # 4. Hiển thị kết quả
                 st.balloons() # Hiệu ứng bóng bay khi thành công
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
-                
-                # --- SỬA LỖI: Thay thế chuỗi '<br/>' bằng ký tự xuống dòng để xuống dòng ---
-                cleaned_text = response.text.replace("<br/>", "\n") 
+
+                # --- SỬA LỖI: Thay thế chuỗi '<br/>' bằng ký tự xuống dòng và làm sạch bảng ---
+                cleaned_text = response.text.replace("<br/>", "\n")
+                # Loại bỏ khoảng trắng thừa xung quanh dấu phân cách bảng để đảm bảo bảng không bị hỏng
+                cleaned_text = cleaned_text.replace("| |", " | | ") 
                 
                 st.markdown(cleaned_text) # Hiển thị văn bản đã được làm sạch
 
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
+
 st.sidebar.title("Giới thiệu")
-st.sidebar.info(
-    """
+#... (Giữ nguyên phần sidebar)
     Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
     \n
     Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
     """
 
 )
+
 
 
 
