@@ -113,7 +113,7 @@ Hãy bắt đầu tạo giáo án.
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
 st.title("🤖 Trợ lý Soạn giáo án Tiểu học")
 st.write("Sản phẩm của thầy giáo Hoàng Trọng Nghĩa.")
-st.markdown("*(Giáo án được soạn theo chuẩn trương trình GDPT 2018)*")
+st.markdown("*(Kế hoạch bài dạy được biên soạn theo chuẩn Chương trình GDPT 2018)*")
 
 
 # Tạo 5 ô nhập liệu cho 5 biến số
@@ -169,10 +169,11 @@ st.sidebar.info(
     """
     Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
     \n
-    Sản phẩm ứng dụng AI để tự động soạn giáo án cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
+    Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
     """
 
 )
+
 
 
 
