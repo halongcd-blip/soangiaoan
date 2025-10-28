@@ -9,6 +9,7 @@ from google.genai.types import Part # <-- Đường dẫn Multimodal chính xác
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
+# -----------------------------------------------------------------
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
@@ -19,13 +20,14 @@ except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() # Dừng ứng dụng
 
-# Khởi tạo CLIENT (Máy khách)
-client = genai.Client(api_key=API_KEY)
+# Khởi tạo MODEL bằng cách gọi trực tiếp lớp GenerativeModel (Đây là cú pháp ổn định nhất)
+# Cần dùng tên lớp 'GenerativeModel' chính xác.
+model = genai.GenerativeModel(
+    model_name="gemini-2.5-flash",
+    api_key=API_KEY # Truyền key trực tiếp
+)
 
-# Khởi tạo MODEL bằng cách gọi trực tiếp từ CLIENT (Cú pháp chuẩn)
-# Chúng ta sử dụng cách truy cập dictionary để tránh lỗi .get()
-model = client.models["gemini-2.5-flash"]
-
+# Đây là "Prompt Gốc"... (Tiếp tục code)
 
 # Đây là "Prompt Gốc"... (Phần PROMPT_GOC giữ nguyên)
 
@@ -205,6 +207,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
