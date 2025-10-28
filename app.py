@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import time
-
+import google.generativeai.types as types # Cần thiết cho việc xử lý file
 # -----------------------------------------------------------------
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
@@ -155,9 +155,17 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
                 # Nếu có file được tải lên, thêm nó vào danh sách content
                 # (Lưu ý: Bạn phải khai báo uploaded_file ở phần giao diện người dùng)
+             # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
                 if uploaded_file is not None:
-                    # Gán file vào biến, Gemini API sẽ tự xử lý định dạng (image/pdf)
-                    content.append(uploaded_file)
+                    # Đọc bytes từ đối tượng file của Streamlit
+                    file_bytes = uploaded_file.read()
+                    
+                    # TẠO ĐỐI TƯỢNG PART CỦA GEMINI API (CẦN THƯ VIỆN TYPES)
+                    file_part = types.Part.from_bytes(
+                        data=file_bytes,
+                        mime_type=uploaded_file.type
+                    )
+                    content.append(file_part) # Thêm đối tượng file Part vào danh sách content
 
                 # 2. Điền Prompt (6 biến số text)
                 final_prompt = PROMPT_GOC.format(
@@ -201,6 +209,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
