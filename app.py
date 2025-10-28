@@ -23,7 +23,7 @@ client = genai.Client(api_key=API_KEY)
 
 # KHỞI TẠO MODEL BẰNG CÁCH TRUY CẬP DICTIONARY (Cú pháp ổn định nhất)
 # KHÔNG dùng .get() và KHÔNG dùng GenerativeModel
-model = client.models["gemini-2.5-flash"] # <--- Đây là DÒNG CUỐI CÙNG của khối khởi tạo. KHÔNG có dấu ngoặc đơn thừa.
+model = client.models.get("gemini-2.5-flash") # <--- SỬ DỤNG PHƯƠNG THỨC .get()
 
 # Đây là "Prompt Gốc"... (Tiếp tục code)
 
@@ -205,6 +205,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
