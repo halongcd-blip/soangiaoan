@@ -152,10 +152,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
                 content = []
 
-                # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
-                # Nếu có file được tải lên, thêm nó vào danh sách content
-                # (Lưu ý: Bạn phải khai báo uploaded_file ở phần giao diện người dùng)
-             # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
+# Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
                 if uploaded_file is not None:
                     # Đọc bytes từ đối tượng file của Streamlit
                     file_bytes = uploaded_file.read()
@@ -209,6 +206,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
