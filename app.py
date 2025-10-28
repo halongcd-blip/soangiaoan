@@ -7,17 +7,18 @@ from io import BytesIO
 # CÁC DÒNG IMPORT AN TOÀN VÀ CƠ BẢN NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-# 🚨 KHÔNG IMPORT TRỰC TIẾP 'Part' TỪ 'types' NỮA. CHÚNG TA SẼ TRUY CẬP NÓ QUA genai.types.Part
+# KHÔNG IMPORT GÌ THÊM. CHÚNG TA SẼ TRUY CẬP Part QUA genai.types.Part
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT (Giữ nguyên Prompt OCR mạnh mẽ)
+# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT 
 # -----------------------------------------------------------------
 
 # LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
+    # Nếu không chạy trên Streamlit Cloud, hiển thị lỗi để người dùng biết
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() 
 
@@ -157,14 +158,17 @@ if submit_button:
                 file_bytes = uploaded_file.read()
                 
                 # Tạo đối tượng Part cho file (ĐÃ SỬA LỖI - truy cập Part qua genai.types)
-                file_part = genai.types.Part.from_bytes( # <--- SỬA ĐỔI QUAN TRỌNG NHẤT Ở ĐÂY
+                # Dùng cú pháp này để đảm bảo Part được tìm thấy
+                file_part = genai.types.Part.from_bytes( 
                     data=file_bytes,
                     mime_type=uploaded_file.type
                 )
                 content.append(file_part)
             except Exception as e:
                 # Xử lý lỗi nếu việc đọc file thất bại
-                st.warning(f"Không thể đọc file {uploaded_file.name}. Bỏ qua file này. Lỗi: {e}")
+                st.error(f"❌ KHÔNG THỂ XỬ LÝ ẢNH/FILE: {uploaded_file.name}. Lỗi: {e}")
+                st.error("Vui lòng kiểm tra lại tên thư viện đã cài đặt trong Streamlit Requirements hoặc thử dùng file khác.")
+
 
     if mon_hoc and lop and ten_bai and yeu_cau:
         with st.spinner('⏳ AI đang biên soạn Giáo án và đọc bài tập trong ảnh, xin chờ một chút...'):
@@ -203,7 +207,7 @@ if submit_button:
                 st.warning("⚠️ **LƯU Ý QUAN TRỌNG:** Chức năng Tải về Word đã bị vô hiệu hóa vì lỗi kỹ thuật nghiêm trọng. Bạn vui lòng **Copy** toàn bộ nội dung Giáo án trên và **Dán** vào file Word. Sau đó, bạn có thể định dạng bảng lại theo ý muốn.")
 
             except Exception as e:
-                st.error(f"Đã có lỗi xảy ra: {e}")
+                st.error(f"Đã có lỗi xảy ra trong quá trình gọi AI: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
 
 # BẮT ĐẦU PHẦN SIDEBAR
