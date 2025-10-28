@@ -4,11 +4,11 @@ import re
 from io import BytesIO
 
 # -----------------------------------------------------------------
-# CÁC DÒNG IMPORT AN TOÀN VÀ CƠ BẢN NHẤT
+# CÁC DÒNG IMPORT AN TOÀN TUYỆT ĐỐI
 # -----------------------------------------------------------------
+# Chỉ import gói chính
 import google.generativeai as genai
-# 🚨 QUAN TRỌNG: SỬ DỤNG CÚ PHÁP CŨ HƠN, ĐƯỢC HỖ TRỢ RỘNG RÃI HƠN
-from google.generativeai import types 
+# 🚨 KHÔNG IMPORT GÌ THÊM. CHÚNG TA SẼ TRUY CẬP Part BẰNG CÁCH GỌI ĐẦY ĐỦ NHẤT: genai.types.Part
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -158,8 +158,8 @@ if submit_button:
                 file_bytes = uploaded_file.read()
                 
                 # Tạo đối tượng Part cho file 
-                # 🚨 SỬ DỤNG CÚ PHÁP types.Part.from_bytes, KHẮC PHỤC LỖI TỪ CÁC PHIÊN BẢN TRƯỚC
-                file_part = types.Part.from_bytes( 
+                # 🚨 SỬ DỤNG CÚ PHÁP TUYỆT ĐỐI genai.types.Part.from_bytes (Cú pháp này chắc chắn đúng nếu thư viện đúng phiên bản)
+                file_part = genai.types.Part.from_bytes( 
                     data=file_bytes,
                     mime_type=uploaded_file.type
                 )
@@ -167,7 +167,7 @@ if submit_button:
             except Exception as e:
                 # Xử lý lỗi nếu việc đọc file thất bại
                 st.error(f"❌ KHÔNG THỂ XỬ LÝ ẢNH/FILE: {uploaded_file.name}. Lỗi: {e}")
-                st.error("Vui lòng kiểm tra lại tên thư viện đã cài đặt trong Streamlit Requirements hoặc thử dùng file khác.")
+                st.error("LỖI CỐT LÕI: Lỗi này xảy ra do Streamlit Cloud đang sử dụng phiên bản thư viện `google-generativeai` không tương thích. Vui lòng thực hiện **Bước 2** để khắc phục.")
 
 
     if mon_hoc and lop and ten_bai and yeu_cau:
