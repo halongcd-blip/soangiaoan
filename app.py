@@ -1,6 +1,8 @@
 import streamlit as st
 import time
-
+from docx import Document
+from io import BytesIO
+import re # Cần để làm sạch Markdown
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
@@ -111,7 +113,44 @@ Hãy bắt đầu tạo giáo án.
 # ==================================================================
 # KẾT THÚC PHẦN PROMPT MỚI
 # ==================================================================
+def create_word_document(markdown_text):
+    """Tạo đối tượng Word (docx) từ nội dung Markdown và trả về dưới dạng bytes."""
+    document = Document()
+    
+    # 1. Tách nội dung theo dòng
+    lines = markdown_text.split('\n')
+    
+    # 2. Xử lý từng dòng để định dạng
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Xử lý tiêu đề Markdown (ví dụ: I. Yêu cầu cần đạt)
+        if re.match(r'^[IVX\d]+\.\s', line):
+            document.add_heading(line, level=2) # Dùng level 2 cho các tiêu đề chính
+        
+        # Xử lý tiêu đề con (ví dụ: 1. Hoạt động Mở đầu)
+        elif line.startswith('**') and line.endswith('**'):
+            document.add_heading(line.strip('**'), level=3) # Dùng level 3 cho tiêu đề phụ
+            
+        # Xử lý gạch đầu dòng Markdown (* hoặc -)
+        elif line.startswith('*') or line.startswith('-'):
+            document.add_paragraph(line.lstrip('*- ').strip(), style='List Bullet')
+        
+        # Xử lý bảng (Đơn giản hóa: Chuyển bảng Markdown thành văn bản thuần)
+        elif line.startswith('|') and len(line.split('|')) > 2:
+            document.add_paragraph(line) # Đưa nguyên dòng bảng vào
+        
+        # Xử lý văn bản thuần túy
+        else:
+            document.add_paragraph(line)
 
+    # Lưu tài liệu vào bộ nhớ (BytesIO)
+    bio = BytesIO()
+    document.save(bio)
+    bio.seek(0)
+    return bio
 
 # -----------------------------------------------------------------
 # 2. XÂY DỰNG GIAO DIỆN "CHAT BOX" (Web App)
@@ -200,6 +239,16 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
                 st.markdown(cleaned_text)
 
+                
+                # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
+                word_bytes = create_word_document(cleaned_text)
+                
+                st.download_button(
+                    label="⬇️ Tải về Giáo án (Word)",
+                    data=word_bytes,
+                    file_name=f"GA_{ten_bai.replace(' ', '_')}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
@@ -212,6 +261,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
