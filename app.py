@@ -193,13 +193,18 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
 # HẾT KHỐI TRY...EXCEPT Ở ĐÂY. KHÔNG CÓ DẤU NHÁY NÀO NỮA.
 
+# HẾT KHỐI TRY...EXCEPT Ở ĐÂY.
+# ... (Khoảng dòng 170)
+
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
     """
     Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
     
     Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
-    """) # <-- Dấu """ đóng khối st.sidebar.info() phải nằm ở đây
+    """
+) # <--- Đảm bảo dấu đóng ngoặc đơn ) không có khoảng trắng hoặc dòng trống phía trước
+
 
 
 
