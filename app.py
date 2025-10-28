@@ -152,7 +152,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
                 content = []
 
-# Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
+                # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
                 if uploaded_file is not None:
                     # Đọc bytes từ đối tượng file của Streamlit
                     file_bytes = uploaded_file.read()
@@ -163,7 +163,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                         mime_type=uploaded_file.type
                     )
                     content.append(file_part) # Thêm đối tượng file Part vào danh sách content
-
+                
                 # 2. Điền Prompt (6 biến số text)
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
@@ -171,14 +171,12 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     bo_sach=bo_sach,
                     ten_bai=ten_bai,
                     yeu_cau=yeu_cau,
-                    yeu_cau_phieu=yeu_cau_phieu_value # Đã thêm biến số thứ 6
+                    yeu_cau_phieu=yeu_cau_phieu_value
                 )
                 # Thêm Prompt vào danh sách Content (luôn luôn có)
                 content.append(final_prompt)
 
                 # 3. Gọi AI với danh sách nội dung (content)
-                # Hàm này hoạt động cho cả trường hợp có file (content có 2 phần tử) 
-                # và không có file (content chỉ có 1 phần tử là Prompt)
                 response = model.generate_content(content)
 
                 # 4. Hiển thị kết quả
@@ -206,6 +204,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
