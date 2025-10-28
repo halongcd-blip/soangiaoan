@@ -4,10 +4,8 @@ import time
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
-# Dùng import này để lấy đủ các thuộc tính GenerativeModel
 import google.generativeai as genai
-# Cần import TYPES để xử lý file, và nó nằm ở đường dẫn này trong gói cũ
-import google.generativeai.types as types 
+import google.generativeai.types as types # Cần thiết cho xử lý file Part
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -24,10 +22,8 @@ except:
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
 
-# Khởi tạo mô hình AI (Cú pháp này đã được chứng minh là ổn định)
+# Khởi tạo mô hình AI (Cú pháp này hoàn toàn đúng với gói google-generativeai)
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
-
-# Đây là "Prompt Gốc"... (Tiếp tục code của bạn)
 # Đây là "Prompt Gốc"...
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
@@ -204,6 +200,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
