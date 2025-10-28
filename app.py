@@ -4,10 +4,11 @@ import re
 from io import BytesIO
 
 # -----------------------------------------------------------------
-# CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
+# CÁC DÒNG IMPORT ỔN ĐỊNH VÀ CHÍNH XÁC NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-from google.generativeai import types # Dùng cho Multimodal (tải file)
+# Lấy thẳng Part từ thư viện chính, đây là cách import chính xác nhất để tránh lỗi.
+from google.generativeai.types import Part 
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -156,8 +157,8 @@ if submit_button:
                 # Đọc file nhị phân
                 file_bytes = uploaded_file.read()
                 
-                # Tạo đối tượng Part cho file (Đây là cách duy nhất để gửi file/ảnh cho AI)
-                file_part = types.Part.from_bytes(
+                # Tạo đối tượng Part cho file (Đã sửa lỗi Part)
+                file_part = Part.from_bytes(
                     data=file_bytes,
                     mime_type=uploaded_file.type
                 )
@@ -169,7 +170,7 @@ if submit_button:
     if mon_hoc and lop and ten_bai and yeu_cau:
         with st.spinner('⏳ AI đang biên soạn Giáo án và đọc bài tập trong ảnh, xin chờ một chút...'):
             try:
-                # 2. Điền Prompt (Chỉ cần 6 biến số)
+                # 2. Điền Prompt 
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
                     lop=lop,
@@ -200,7 +201,7 @@ if submit_button:
 
                 st.markdown(cleaned_text) 
                 
-                st.warning("⚠️ **LƯU Ý QUAN TRỌNG:** Chức năng Tải về Word đã bị vô hiệu hóa vì lỗi kỹ thuật nghiêm trọng (`ImportError`). Bạn vui lòng **Copy** toàn bộ nội dung Giáo án trên và **Dán** vào file Word. Sau đó, bạn có thể định dạng bảng lại theo ý muốn.")
+                st.warning("⚠️ **LƯU Ý QUAN TRỌNG:** Chức năng Tải về Word đã bị vô hiệu hóa vì lỗi kỹ thuật nghiêm trọng. Bạn vui lòng **Copy** toàn bộ nội dung Giáo án trên và **Dán** vào file Word. Sau đó, bạn có thể định dạng bảng lại theo ý muốn.")
 
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
