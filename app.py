@@ -4,15 +4,14 @@ import re
 from io import BytesIO
 
 # -----------------------------------------------------------------
-# CÁC DÒNG IMPORT ỔN ĐỊNH VÀ CHÍNH XÁC NHẤT
+# CÁC DÒNG IMPORT AN TOÀN VÀ CƠ BẢN NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
-# Lấy thẳng Part từ thư viện chính, đây là cách import chính xác nhất để tránh lỗi.
-from google.generativeai.types import Part 
+# 🚨 KHÔNG IMPORT TRỰC TIẾP 'Part' TỪ 'types' NỮA. CHÚNG TA SẼ TRUY CẬP NÓ QUA genai.types.Part
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT (ĐÃ THÊM YÊU CẦU OCR)
+# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT (Giữ nguyên Prompt OCR mạnh mẽ)
 # -----------------------------------------------------------------
 
 # LẤY API KEY TỪ STREAMLIT SECRETS
@@ -157,8 +156,8 @@ if submit_button:
                 # Đọc file nhị phân
                 file_bytes = uploaded_file.read()
                 
-                # Tạo đối tượng Part cho file (Đã sửa lỗi Part)
-                file_part = Part.from_bytes(
+                # Tạo đối tượng Part cho file (ĐÃ SỬA LỖI - truy cập Part qua genai.types)
+                file_part = genai.types.Part.from_bytes( # <--- SỬA ĐỔI QUAN TRỌNG NHẤT Ở ĐÂY
                     data=file_bytes,
                     mime_type=uploaded_file.type
                 )
