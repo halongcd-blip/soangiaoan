@@ -35,11 +35,6 @@ DỮ LIỆU ĐẦU VÀO:
 3.  **Bộ sách:** {bo_sach}
 4.  **Tên bài học/Chủ đề:** {ten_bai}
 5.  **Yêu cầu cần đạt (Lấy từ Chương trình môn học):** {yeu_cau}
-# Thêm ô nhập liệu mới cho Bài tập SGK dưới dạng file
-uploaded_file = st.file_uploader(
-    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Nếu cần)", 
-    type=["pdf", "png", "jpg", "jpeg"]
-)
 7.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
 
 YÊU CẦU VỀ ĐỊNH DẠNG:
@@ -127,7 +122,18 @@ lop = st.text_input("2. Lớp:", placeholder="Ví dụ: 2")
 bo_sach = st.text_input("3. Bộ sách:", placeholder="Ví dụ: Cánh Diều")
 ten_bai = st.text_input("4. Tên bài học / Chủ đề:", placeholder="Ví dụ: Bài 2: Thời gian của em")
 yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu cầu cần đạt ...", height=150)
+# ... (Phần nhập liệu của mon_hoc, lop, bo_sach, ten_bai, yeu_cau)
 
+# THÊM CODE NÀY VÀO PHẦN GIAO DIỆN CỦA BẠN:
+uploaded_file = st.file_uploader(
+    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tùy chọn)", 
+    type=["pdf", "png", "jpg", "jpeg"]
+)
+
+# Thêm ô nhập liệu mới cho tính năng Phiếu Bài Tập
+tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False) 
+
+# ... (Tiếp theo là nút bấm tạo giáo án)
 # Thêm Checkbox cho tùy chọn Phiếu Bài Tập
 tao_phieu = st.checkbox("Tạo kèm Phiếu bài tập")
 
@@ -194,6 +200,7 @@ st.sidebar.title("Giới thiệu")
     """
 
 )
+
 
 
 
