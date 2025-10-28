@@ -1,28 +1,19 @@
 import streamlit as st
 import time
 from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT 
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn, _register_for_tag
 from io import BytesIO
-import re
-
+import re # Cần để làm sạch Markdown
 from docx.shared import Inches
 # -----------------------------------------------------------------
 # CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
 # -----------------------------------------------------------------
 import google.generativeai as genai
+# Lớp Part nằm trực tiếp ở thư viện gốc, không qua module 'types'
 from google.generativeai import types
-
-# 🚨 KHỐI LỖI PHÒNG NGỪA CẦN THIẾT
-# Đăng ký namespace 'w' trước khi gọi qn('w:...') để tránh lỗi XML
-_register_for_tag('w:topBdr') 
-_register_for_tag('w:bottomBdr')
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI VÀ PROMPT (GIỮ NGUYÊN)
+# 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
 # LẤY API KEY TỪ STREAMLIT SECRETS
@@ -30,15 +21,17 @@ try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
-    st.stop() 
+    st.stop() # Dừng ứng dụng
 
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
 
-# Khởi tạo mô hình AI 
+# Khởi tạo mô hình AI (Cú pháp này hoàn toàn đúng với gói google-generativeai)
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
+# Đây là "Prompt Gốc"...
 
-# Đây là "Prompt Gốc" (GIỮ NGUYÊN)
+# Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
+# Toàn bộ "bộ não" sư phạm nằm ở đây
 PROMPT_GOC = """
 CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
@@ -58,14 +51,14 @@ YÊU CẦU VỀ ĐỊNH DẠNG:
 Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
 **I. Yêu cầu cần đạt**
-(Phát biểu cụ thể học sinh thực hiện được việc gì; vận dụng được những gì; phẩm chất, năng lực gì.)
+(Phát biểu cụ thể học sinh thực hiện được việc gì; vận dụng được những gì, phẩm chất, năng lực gì.)
 1.  **Về kiến thức:** (Bám sát {yeu_cau})
 2.  **Về năng lực:** (Năng lực chung: Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo; Năng lực đặc thù của môn {mon_hoc})
 3.  **Về phẩm chất:** (Chọn 1-2 trong 5 phẩm chất: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm)
 
 **II. Đồ dùng dạy học**
 (Nêu các thiết bị, học liệu được sử dụng trong bài dạy. Nếu Yêu cầu tạo phiếu bài tập là CÓ, phải nhắc đến Phiếu bài tập trong mục này.)
-1.  **Chuẩn bị của giáo viên (GV)::** (Tranh ảnh, video, phiếu học tập, link game...)
+1.  **Chuẩn bị của giáo viên (GV):** (Tranh ảnh, video, phiếu học tập, link game...)
 2.  **Chuẩn bị của học sinh (HS):** (SGK, Vở bài tập, bút màu...)
 
 **III. Các hoạt động dạy học chủ yếu**
@@ -89,8 +82,10 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
 ---
 
+# <-- MỚI: ĐÃ ĐỔI THỨ TỰ THÀNH PHẦN IV
 **PHẦN IV. ĐIỀU CHỈNH SAU BÀI DẠY (NẾU CÓ)**
 *(Đây là phần để trống để giáo viên ghi chú lại sau khi thực tế giảng dạy)*
+
 1.  **Về nội dung, kiến thức:**
     * ......................................................................
     * ......................................................................
@@ -103,6 +98,7 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
 ---
 
+# <-- MỚI: ĐÃ ĐỔI THỨ TỰ THÀNH PHẦN V
 **PHẦN V. PHIẾU BÀI TẬP (NẾU CÓ)**
 (QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 6 `{yeu_cau_phieu}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này và không đề cập gì đến nó.)
 
@@ -115,67 +111,39 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 ---
 Hãy bắt đầu tạo giáo án.
 """
-
-# -----------------------------------------------------------------
-# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ FIX LỖI NAMESPACE 'w' VÀ DÙNG MÀU TRẮNG ĐỂ ẨN)
-# -----------------------------------------------------------------
+# ==================================================================
+# KẾT THÚC PHẦN PROMPT MỚI
+# ==================================================================
+from docx import Document
+from docx.shared import Inches
+from io import BytesIO
+import re
 
 # Các mẫu regex để nhận diện các loại tiêu đề
 ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)(\d+\.\sHoạt động.*?)(\*\*|)\s*', re.IGNORECASE)
 SUB_ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)([a-z]\)\s.*?)(\*\*|)\s*', re.IGNORECASE)
 
-# Loại bỏ mọi trường hợp "Cách tiến hành" và dấu ** thừa
+# Loại bỏ mọi trường hợp "Cách tiến hành"
 def clean_content(text):
-    text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
-    # Loại bỏ triệt để dấu ** thừa
-    return text.replace('**', '')
+    return re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
 
-# --- HÀM HỖ TRỢ ĐỊNH DẠNG VIỀN CELL AN TOÀN (DÙNG MÀU TRẮNG ĐỂ ẨN) ---
-def set_cell_border_safe(cell, border_color="auto", border_size=12, top_color=None, bottom_color=None):
-    """
-    Đặt viền cho ô theo cách an toàn hơn, đặc biệt dùng màu trắng để ẩn viền ngang.
-    """
-    tc = cell._tc
-    tcPr = tc.get_or_add_tcPr()
-
-    # Áp dụng viền mặc định cho cả 4 cạnh
-    for tag in ('w:topBdr', 'w:bottomBdr', 'w:leftBdr', 'w:rightBdr'):
-        bdr = OxmlElement(tag)
-        
-        # Nếu là viền ngang (top/bottom) và có màu riêng biệt (White), áp dụng màu đó
-        if tag == 'w:topBdr' and top_color:
-            bdr.set(qn('w:color'), top_color)
-        elif tag == 'w:bottomBdr' and bottom_color:
-            bdr.set(qn('w:color'), bottom_color)
-        # Nếu là viền đứng (left/right) hoặc không có màu đặc biệt, dùng màu mặc định (auto)
-        else:
-            bdr.set(qn('w:color'), border_color)
-
-        bdr.set(qn('w:val'), 'single')
-        bdr.set(qn('w:sz'), str(border_size))
-        
-        # Xóa viền cũ và thêm viền mới
-        for element in tcPr.findall(tag):
-            tcPr.remove(element)
-
-        tcPr.append(bdr)
-
-# --- HÀM TẠO FILE WORD CHÍNH ---
 def create_word_document(markdown_text, lesson_title):
+    """
+    Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng.
+    - Đảm bảo Tiêu đề Hoạt động và Tiêu đề Phụ (a, b...) được gộp cột (merge cell).
+    - Ngăn chặn việc tạo quá nhiều đường kẻ ngang.
+    """
     document = Document()
     
-    # Thiết lập font size mặc định cho Normal style
-    document.styles['Normal'].font.size = Pt(12) 
-    
-    # 1. THÊM TIÊU ĐỀ CHÍNH (Yêu cầu: Căn giữa)
+    # 1. THÊM TIÊU ĐỀ CHÍNH
     if lesson_title:
-        p_heading = document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
-        p_heading.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
         document.add_paragraph() 
     
     lines = markdown_text.split('\n')
     is_in_table_section = False
     table = None
+    current_row = None # Biến theo dõi hàng hiện tại (để gom nội dung vào)
     
     for line in lines:
         line = line.strip()
@@ -189,6 +157,7 @@ def create_word_document(markdown_text, lesson_title):
             
             # Tạo bảng 2 cột
             table = document.add_table(rows=1, cols=2)
+            table.style = 'Table Grid'
             table.autofit = False
             table.columns[0].width = Inches(3.5) 
             table.columns[1].width = Inches(3.5)
@@ -198,188 +167,167 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
             
-            # Tùy chỉnh viền cho Header (Dùng viền mặc định 'auto' - màu đen)
-            for cell in hdr_cells:
-                # set_cell_border_safe(cell, border_color="auto", top_color="auto", bottom_color="auto")
-                pass # Để mặc định có viền đen
+            # Khởi tạo hàng đầu tiên ngay sau header để chứa nội dung
+            current_row = table.add_row().cells 
             
             continue
             
         # 2. XỬ LÝ NỘI DUNG BÊN TRONG BẢNG
         if is_in_table_section and table is not None:
+            # Bỏ qua dòng phân cách bảng (| :--- | :--- |)
             if line.startswith('| :---'):
                 continue
             
-            # Thoát khỏi bảng khi gặp tiêu đề lớn (PHẦN IV)
+            # Kiểm tra xem bảng đã kết thúc chưa
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
-                # Thêm viền dưới cho hàng cuối cùng trước khi thoát
-                if table.rows:
-                    last_row_cells = table.rows[-1].cells
-                    for cell in last_row_cells:
-                        set_cell_border_safe(cell, border_color="auto", top_color="FFFFFF", bottom_color="auto")
-                        
                 is_in_table_section = False
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
                     document.add_heading(line.strip().strip('**'), level=2)
                 continue
             
+            # Xử lý các dòng dữ liệu Markdown
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
                 if len(cells_content) == 2:
                     
+                    # Áp dụng hàm làm sạch nội dung cột
                     gv_content = clean_content(cells_content[0])
                     hs_content = clean_content(cells_content[1])
                     
-                    # --- KIỂM TRA TIÊU ĐỀ HOẠT ĐỘNG HOẶC TIÊU ĐỀ PHỤ ---
+                    # --- KIỂM TRA TIÊU ĐỀ HOẠT ĐỘNG (1, 2, 3...) HOẶC TIÊU ĐỀ PHỤ (a, b...) ---
+                    
                     is_main_header = ACTIVITY_HEADERS_PATTERN.match(gv_content)
                     is_sub_header = SUB_ACTIVITY_HEADERS_PATTERN.match(gv_content)
                     
                     if is_main_header or is_sub_header:
-                        title = gv_content.strip()
+                        # Tiêu đề được tìm thấy: Merge cột và tạo tiêu đề in đậm
+                        
+                        # Nội dung tiêu đề đã được làm sạch
+                        title = gv_content.strip('**').strip()
 
-                        row_cells = table.add_row().cells 
-                        row_cells[0].merge(row_cells[1]) # GỘP CỘT
+                        # --- LOGIC QUAN TRỌNG: CHỈ TẠO HÀNG MỚI ĐỂ PHÂN CÁCH (ĐƯỜNG KẺ NGANG) ---
+                        current_row = table.add_row().cells # <--- TẠO ĐƯỜNG KẺ NGANG ĐỂ PHÂN CÁCH HOẠT ĐỘNG TRƯỚC
+                        current_row[0].merge(current_row[1]) # Gộp cột cho hàng tiêu đề
 
-                        p = row_cells[0].add_paragraph(title)
+                        # Thêm văn bản tiêu đề vào cột 0 (đã merge)
+                        p = current_row[0].add_paragraph(title)
                         p.runs[0].bold = True 
                         
-                        # --- XỬ LÝ VIỀN CHO HÀNG TIÊU ĐỀ HOẠT ĐỘNG (Dùng viền đen) ---
-                        for cell in row_cells:
-                            set_cell_border_safe(cell, border_color="auto", top_color="auto", bottom_color="auto")
+                        # Cần tạo thêm một hàng mới ngay sau tiêu đề để chứa nội dung, 
+                        # điều này sẽ tạo ra đường kẻ ngang phân cách tiêu đề với nội dung bên dưới.
+                        current_row = table.add_row().cells 
                         
-                        continue
+                        continue 
                         
                     # --- XỬ LÝ NỘI DUNG THƯỜNG ---
                     else:
-                        # TẠO HÀNG MỚI CHO NỘI DUNG GV-HS ĐỒNG BỘ
-                        row_cells = table.add_row().cells 
-                        
-                        # --- ẨN VIỀN NGANG GIỮA CÁC HÀNG NỘI DUNG (MÀU TRẮNG) ---
-                        for cell in row_cells:
-                            # Đặt màu viền trên và dưới là TRẮNG ("FFFFFF")
-                            set_cell_border_safe(cell, border_color="auto", top_color="FFFFFF", bottom_color="FFFFFF")
-                        
-                        # Xử lý nội dung (GV và HS) từng dòng một để đảm bảo đồng bộ
-                        gv_lines_raw = [l.strip() for l in gv_content.split('\n') if l.strip()]
-                        hs_lines_raw = [l.strip() for l in hs_content.split('\n') if l.strip()]
-                        max_lines = max(len(gv_lines_raw), len(hs_lines_raw))
-                        
-                        for i in range(max_lines):
-                            gv_line = gv_lines_raw[i] if i < len(gv_lines_raw) else ""
-                            hs_line = hs_lines_raw[i] if i < len(hs_lines_raw) else ""
+                        # Nội dung thường sẽ được gom vào hàng hiện tại (current_row)
+                        # Điều này ngăn cản việc tạo ra đường kẻ ngang liên tục.
+                        if current_row is None:
+                            # Trường hợp hiếm: Nếu chưa có hàng nào được tạo sau header
+                            current_row = table.add_row().cells 
 
-                            for cell_index, line_text in enumerate([gv_line, hs_line]):
-                                p = row_cells[cell_index].add_paragraph()
-                                if not line_text:
-                                    continue
+                        # Xử lý nội dung hai cột (GV và HS)
+                        for cell_index, cell_content in enumerate([gv_content, hs_content]):
+                            
+                            content_lines = cell_content.split('\n')
+                            
+                            for content_line in content_lines:
+                                content_line = content_line.strip()
+                                if not content_line: continue
                                 
-                                # Xử lý gạch đầu dòng (buộc dùng List Bullet cho các mục list)
-                                if line_text.startswith('*') or line_text.startswith('-') or re.match(r'^\d+\.\s', line_text):
-                                    clean_text = re.sub(r'^[*-]\s*|^\d+\.\s*', '', line_text).strip()
-                                    p.text = clean_text
-                                    p.style = 'List Bullet' 
+                                # Loại bỏ định dạng ** nếu có
+                                content_line = content_line.strip('**').strip()
+                                
+                                # Xử lý gạch đầu dòng (thêm vào ô hiện tại)
+                                if content_line.startswith('*') or content_line.startswith('-'):
+                                    p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
+                                
+                                # Văn bản thường (thêm vào ô hiện tại)
                                 else:
-                                    p.text = line_text
-                        
-                        continue
+                                    current_row[cell_index].add_paragraph(content_line)
+                                
+                    continue
             
-        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (GIỮ NGUYÊN)
+        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (Tiêu đề I, II, IV...)
         
-        # Xử lý tiêu đề chính 
+        # Xử lý tiêu đề chính (I. Yêu cầu cần đạt, IV. ĐIỀU CHỈNH SAU BÀI DẠY)
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
             document.add_heading(clean_line, level=2)
             
-        # Xử lý tiêu đề con
+        # Xử lý tiêu đề con (Về kiến thức, Chuẩn bị của GV)
         elif line.startswith('**') and line.endswith('**'):
-            clean_line = line.strip('**').strip()
-            # Căn giữa Phiếu bài tập
-            if 'PHIẾU BÀI TẬP' in clean_line.upper() or 'ĐIỀU CHỈNH' in clean_line.upper():
-                p = document.add_heading(clean_line, level=3)
-                p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            else:
-                document.add_heading(clean_line, level=3)
+            document.add_heading(line.strip('**'), level=3)
             
-        # Xử lý gạch đầu dòng Markdown 
-        elif line.startswith('*') or line.startswith('-') or re.match(r'^\d+\.\s', line):
-            clean_text = re.sub(r'^[*-]\s*|^\d+\.\s*', '', line).strip()
-            document.add_paragraph(clean_text, style='List Bullet')
+        # Xử lý gạch đầu dòng Markdown
+        elif line.startswith('*') or line.startswith('-'):
+            document.add_paragraph(line.lstrip('*- ').strip(), style='List Bullet')
             
         # Xử lý văn bản thuần túy
         else:
             document.add_paragraph(line)
-            
-    # --- XỬ LÝ VIỀN DƯỚI CỦA HÀNG CUỐI CÙNG TRONG BẢNG (ĐÓNG BẢNG) ---
-    if is_in_table_section and table and len(table.rows) > 1:
-        last_row_cells = table.rows[-1].cells
-        for cell in last_row_cells:
-            # Đảm bảo viền dưới là màu đen (auto) để đóng bảng
-            set_cell_border_safe(cell, border_color="auto", top_color="FFFFFF", bottom_color="auto")
-            
+
     # Lưu tài liệu vào bộ nhớ (BytesIO)
     bio = BytesIO()
     document.save(bio)
     bio.seek(0)
     return bio
-
 # -----------------------------------------------------------------
-# 3. KHỐI LOGIC CHẠY STREAMLIT (UI) - GIỮ NGUYÊN
+# 2. XÂY DỰNG GIAO DIỆN "CHAT BOX" (Web App)
 # -----------------------------------------------------------------
 
-st.title("🤖 Giáo án thông minh - 🚀 [App Tên Bạn]")
+st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
+st.title("🤖 Trợ lý Soạn giáo án Tiểu học")
+st.write("Sản phẩm của thầy giáo Hoàng Trọng Nghĩa.")
+st.markdown("*(Kế hoạch bài dạy được biên soạn theo chuẩn Chương trình GDPT 2018)*")
 
-# Tạo các trường nhập liệu
-with st.form(key='giáo_án_form'):
-    st.subheader("📝 Thông tin cơ bản:")
-    col1, col2 = st.columns(2)
-    with col1:
-        mon_hoc = st.selectbox("Môn học:", ["Tiếng Việt", "Toán", "Đạo đức", "Khoa học"])
-    with col2:
-        lop = st.selectbox("Lớp:", ["1", "2", "3", "4", "5"])
-        
-    bo_sach = st.text_input("Bộ sách (ví dụ: Chân trời sáng tạo):", "Kết nối tri thức với cuộc sống")
-    ten_bai = st.text_input("Tên bài giảng:", "Bài 2: Ngày hôm qua đâu rồi?")
 
-    st.subheader("💡 Yêu cầu chi tiết:")
-    yeu_cau = st.text_area(
-        "Yêu cầu về kiến thức/nội dung bài giảng (Dán nội dung từ PPCT hoặc sách giáo khoa vào đây):",
-        "Đọc đúng, trôi chảy toàn bài thơ. Hiểu được nội dung bài thơ: Ngày hôm qua không mất đi mà hóa thành những điều có ích."
-    )
-    
-    yeu_cau_phieu_value = st.text_area(
-        "Nội dung cho Phiếu bài tập (Nếu không cần, để trống):",
-        "Bài 1: Nối đúng ý. Bài 2: Khoanh tròn đáp án đúng. Bài 3: Điền từ còn thiếu vào khổ thơ."
-    )
+# Tạo 5 ô nhập liệu cho 5 biến số
+mon_hoc = st.text_input("1. Môn học:", placeholder="Ví dụ: Tiếng Việt")
+lop = st.text_input("2. Lớp:", placeholder="Ví dụ: 2")
+bo_sach = st.text_input("3. Bộ sách:", placeholder="Ví dụ: Cánh Diều")
+ten_bai = st.text_input("4. Tên bài học / Chủ đề:", placeholder="Ví dụ: Bài 2: Thời gian của em")
+yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu cầu cần đạt ...", height=150)
+# ... (Phần nhập liệu của mon_hoc, lop, bo_sach, ten_bai, yeu_cau)
 
-    uploaded_files = st.file_uploader("🖼️ Tải lên hình ảnh/tài liệu tham khảo (Tùy chọn):", type=["png", "jpg", "jpeg", "pdf", "docx"], accept_multiple_files=True)
+# 6. KHAI BÁO BIẾN CHO FILE UPLOADER (Cần nằm ở đây)
+uploaded_file = st.file_uploader(
+    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tùy chọn)", 
+    type=["pdf", "png", "jpg", "jpeg"]
+)
 
-    submit_button = st.form_submit_button(label='✨ Tạo Giáo án')
+# 7. KHAI BÁO BIẾN CHO CHECKBOX
+tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False)
 
-if submit_button:
-    # 1. Chuẩn bị danh sách Content cho AI
-    content = []
-    
-    # Xử lý các file được tải lên
-    if uploaded_files:
-        st.info(f"Đang xử lý {len(uploaded_files)} file. Quá trình có thể mất vài giây...")
-        for uploaded_file in uploaded_files:
+# Nút bấm để tạo giáo án
+if st.button("🚀 Tạo Giáo án ngay!"):
+    # Lưu ý: Giả định bạn đã sửa logic kiểm tra API Key để dùng st.secrets
+    if not mon_hoc or not lop or not bo_sach or not ten_bai or not yeu_cau:
+        st.error("Vui lòng nhập đầy đủ cả 5 thông tin!")
+    # [BỎ: elif API_KEY == "PASTE_KEY_CUA_BAN_VAO_DAY":]
+
+    else:
+        with st.spinner("Trợ lý AI đang soạn giáo án, vui lòng chờ trong giây lát..."):
             try:
-                # Đọc file nhị phân
-                file_bytes = uploaded_file.read()
-                
-                # Tạo đối tượng Part cho file
-                file_part = types.Part.from_bytes(
+                # Logic cho Biến số Tùy chọn 1 (Tạo Phiếu Bài Tập)
+                yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
+
+                # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
+                content = []
+
+               # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
+                if uploaded_file is not None: # <--- 8 spaces
+                    # Đọc bytes từ đối tượng file của Streamlit
+                    file_bytes = uploaded_file.read() # <--- 12 spaces
+                    
+                    file_part = types.Part.from_bytes( # Giữ nguyên cú pháp này
                     data=file_bytes,
                     mime_type=uploaded_file.type
-                )
-                content.append(file_part)
-            except Exception as e:
-                st.warning(f"Không thể đọc file {uploaded_file.name}. Bỏ qua file này. Lỗi: {e}")
-
-    if mon_hoc and lop and ten_bai and yeu_cau:
-        with st.spinner('⏳ AI đang biên soạn Giáo án, xin chờ một chút...'):
-            try:
+                    )
+                    content.append(file_part) # <--- DÒNG 162: PHẢI CÓ 12 DẤU CÁCH
+                
                 # 2. Điền Prompt (6 biến số text)
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
@@ -394,25 +342,27 @@ if submit_button:
 
                 # 3. Gọi AI với danh sách nội dung (content)
                 response = model.generate_content(content)
-                full_text = response.text
                 
-                # 4. Hiển thị kết quả
+                # 4. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
                 st.balloons() 
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
+# LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
+                # Tìm vị trí bắt đầu của giáo án (thường là "I. Yêu cầu cần đạt")
+                # Sau đó, cắt bỏ phần thừa ở đầu.
+                full_text = response.text
+                start_index = full_text.find("I. Yêu cầu cần đạt") # Tìm điểm bắt đầu
                 
-                # --- SỬA LỖI: Lọc bỏ phần giải thích thừa của AI (nếu có) ---
-                start_marker = "KẾ HOẠCH BÀI DẠY:"
-                start_index = full_text.find(start_marker)
-
                 if start_index != -1:
+                    # Nếu tìm thấy, cắt từ đó trở đi
                     cleaned_text = full_text[start_index:]
                 else:
+                    # Nếu không tìm thấy, hiển thị toàn bộ nội dung (bao gồm cả lỗi)
                     cleaned_text = full_text
 
                 st.markdown(cleaned_text) 
                 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
-                word_bytes = create_word_document(cleaned_text, ten_bai) 
+                word_bytes = create_word_document(cleaned_text, ten_bai) # <--- ĐÃ THÊM ten_bai
                 
                 st.download_button(
                     label="⬇️ Tải về Giáo án (Word)",
@@ -423,14 +373,72 @@ if submit_button:
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
-
-# BẮT ĐẦU PHẦN SIDEBAR
+# BẮT ĐẦU PHẦN SIDEBAR (PHẢI THỤT LỀ BẰNG 0)
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
 """
 Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
 
-Sản phẩm ứng dụng AI để tự động biên soạn giáo án Tiểu học theo các tiêu chí sư phạm.
+Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-st.sidebar.image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-5c742Z_R6zB4u-7S5Q6w0x-X5uW1k6Fsg&s")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
