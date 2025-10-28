@@ -191,7 +191,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
-
+ """
 st.sidebar.title("Giới thiệu")
 #... (Giữ nguyên phần sidebar)
     Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
@@ -200,6 +200,7 @@ st.sidebar.title("Giới thiệu")
     """
 
 )
+
 
 
 
