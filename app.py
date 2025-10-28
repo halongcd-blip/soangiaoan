@@ -1,27 +1,32 @@
 import streamlit as st
-from google import genai
 import time
-from google.genai.types import Part
+
 # -----------------------------------------------------------------
+# CÁC DÒNG IMPORT CHÍNH XÁC CHO GÓI 'google-genai'
 # -----------------------------------------------------------------
+import google.genai as genai # <-- Dùng tên module MỚI (genai)
+from google.genai.types import Part # <-- Dùng đường dẫn MỚI cho Multimodal
+# -----------------------------------------------------------------
+
 # -----------------------------------------------------------------
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
-# LẤY API KEY TỪ STREAMLIT SECRETS (Cần để trong khối try...except)
+# LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     # Tên biến bí mật trong Streamlit Cloud là "GEMINI_API_KEY"
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
-    st.stop() # Dừng ứng dụng nếu không tìm thấy key
+    st.stop() # Dừng ứng dụng
 
-# CHỈ CẦN KHỞI TẠO MODEL TRỰC TIẾP
-# Model sẽ tự động sử dụng API_KEY được truyền vào (Phương pháp đơn giản nhất)
+# Khởi tạo mô hình AI (Không dùng genai.configure() nữa)
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
-    api_key=API_KEY # Truyền key trực tiếp
+    api_key=API_KEY # Truyền key trực tiếp vào model
 )
+
+# Đây là "Prompt Gốc"... (Phần PROMPT_GOC giữ nguyên)
 
 # Đây là "Prompt Gốc"...
 
@@ -199,6 +204,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
