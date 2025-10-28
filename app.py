@@ -1,29 +1,27 @@
 import streamlit as st
 import time
+from google.genai import GenerativeModel # <-- LẤY LỚP MODEL TRỰC TIẾP!
+from google.genai.types import Part       # <-- LẤY LỚP PART cho upload file
 
 # -----------------------------------------------------------------
-# CÁC DÒNG IMPORT CHÍNH XÁC CHO GÓI 'google-genai'
-# -----------------------------------------------------------------
-import google.genai as genai # <-- Tên module chính xác cho gói google-genai
-from google.genai.types import Part # <-- Đường dẫn Multimodal chính xác
-# -----------------------------------------------------------------
-
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
-# LẤY API KEY TỪ STREAMLIT SECRETS
+# LẤY API KEY TỪ STREAMLIT SECRETS (Giữ nguyên)
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() # Dừng ứng dụng
 
-# KHỞI TẠO CLIENT
-client = genai.Client(api_key=API_KEY)
+# KHỞI TẠO MODEL (Cách đơn giản và ổn định nhất)
+# Bây giờ có thể gọi GenerativeModel trực tiếp vì đã import ở trên
+model = GenerativeModel(
+    model_name="gemini-2.5-flash",
+    api_key=API_KEY
+)
 
-# KHỞI TẠO MODEL BẰNG CÁCH GỌI PHƯƠNG THỨC .get()
-model = client.models.get("gemini-2.5-flash")
-
+# Đây là "Prompt Gốc"... (PROMPT_GOC)
 # Đây là "Prompt Gốc"...
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
@@ -200,6 +198,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
