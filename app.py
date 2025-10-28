@@ -176,23 +176,16 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
                 # 3. Gọi AI với danh sách nội dung (content)
                 response = model.generate_content(content)
-
-                # 4. Hiển thị kết quả
-                st.balloons() # Hiệu ứng bóng bay khi thành công
-                st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
-
-                # --- SỬA LỖI: Thay thế chuỗi '<br/>' bằng ký tự xuống dòng và làm sạch bảng ---
-                cleaned_text = response.text.replace("<br/>", "\n")
-                # Loại bỏ khoảng trắng thừa xung quanh dấu phân cách bảng để đảm bảo bảng không bị hỏng
-                cleaned_text = cleaned_text.replace("| |", " | | ") 
                 
-                st.markdown(cleaned_text) # Hiển thị văn bản đã được làm sạch
+                # 4. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
+                st.balloons() 
+                st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
+                
+                # ... (Các dòng làm sạch text)
 
-          # Hết khối gọi AI và xử lý lỗi
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
-
 # BẮT ĐẦU PHẦN SIDEBAR (PHẢI THỤT LỀ BẰNG 0)
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
@@ -202,6 +195,7 @@ Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
