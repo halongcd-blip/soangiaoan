@@ -4,7 +4,7 @@ from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT 
 from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
+from docx.oxml.ns import qn, _register_for_tag
 from io import BytesIO
 import re
 
@@ -15,7 +15,10 @@ from docx.shared import Inches
 import google.generativeai as genai
 from google.generativeai import types
 
-# 🚨 KHÔNG CẦN DÒNG ĐĂNG KÝ NAMESPACE NỮA (VÌ SẼ DÙNG CÁCH KHÁC)
+# 🚨 KHỐI LỖI PHÒNG NGỪA CẦN THIẾT
+# Đăng ký namespace 'w' trước khi gọi qn('w:...') để tránh lỗi XML
+_register_for_tag('w:topBdr') 
+_register_for_tag('w:bottomBdr')
 # -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
@@ -55,7 +58,7 @@ YÊU CẦU VỀ ĐỊNH DẠNG:
 Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
 **I. Yêu cầu cần đạt**
-(Phát biểu cụ thể học sinh thực hiện được việc gì; vận dụng được những gì, phẩm chất, năng lực gì.)
+(Phát biểu cụ thể học sinh thực hiện được việc gì; vận dụng được những gì; phẩm chất, năng lực gì.)
 1.  **Về kiến thức:** (Bám sát {yeu_cau})
 2.  **Về năng lực:** (Năng lực chung: Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo; Năng lực đặc thù của môn {mon_hoc})
 3.  **Về phẩm chất:** (Chọn 1-2 trong 5 phẩm chất: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm)
@@ -114,7 +117,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ CHUYỂN SANG CÁCH AN TOÀN HƠN)
+# 2. KHỐI HÀM XỬ LÝ WORD (ĐÃ FIX LỖI NAMESPACE 'w' VÀ DÙNG MÀU TRẮNG ĐỂ ẨN)
 # -----------------------------------------------------------------
 
 # Các mẫu regex để nhận diện các loại tiêu đề
