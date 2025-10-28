@@ -188,21 +188,20 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 
                 st.markdown(cleaned_text) # Hiển thị văn bản đã được làm sạch
 
-           except Exception as e:
+          # Hết khối gọi AI và xử lý lỗi
+            except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
-# HẾT KHỐI TRY...EXCEPT Ở ĐÂY. KHÔNG CÓ DẤU NHÁY NÀO NỮA.
 
-# HẾT KHỐI TRY...EXCEPT Ở ĐÂY.
-# ... (Khoảng dòng 170)
-
+# BẮT ĐẦU PHẦN SIDEBAR (PHẢI THỤT LỀ BẰNG 0)
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
-    "Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội \"Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo\"."
-    "\n\n" # Thêm hai ký tự xuống dòng
-    "Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018."
-)
+"""
+Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
 
+Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
+"""
+)
 
 
 
