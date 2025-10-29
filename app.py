@@ -30,7 +30,7 @@ genai.configure(api_key=API_KEY)
 # -----------------------------------------------------------------
 # SỬ DỤNG MODEL "gemini-pro-vision" LÀ CHÍNH XÁC
 # -----------------------------------------------------------------
-model = genai.GenerativeModel(model_name="gemini-pro-vision") 
+model = genai.GenerativeModel(model_name="gemini-2.5-flash-latest")
 # -----------------------------------------------------------------
 
 
@@ -313,3 +313,4 @@ Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tha
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
