@@ -164,7 +164,7 @@ def create_word_document(markdown_text, lesson_title):
 
     lines = markdown_text.split('\n')
     is_in_table_section = False
-    is_in_graphviz_section = False # Cờ mới để bỏ qua code Graphviz
+    is_in_graphviz_section = False
     table = None
     current_row = None
 
@@ -173,9 +173,7 @@ def create_word_document(markdown_text, lesson_title):
         if not line:
             continue
             
-        # Bắt đầu và kết thúc khối Graphviz (đảm bảo bỏ qua mọi thứ bên trong)
-        # Nếu chưa gặp tiêu đề PHẦN VI, ta cần dùng cờ này để bỏ qua các dòng code Graphviz
-        # vì chúng ta sẽ chèn toàn bộ mã code sau khi gặp tiêu đề PHẦN VI.
+        # Bắt đầu và kết thúc khối Graphviz (Cần cho Streamlit, nhưng trong Word cần dùng logic Parse riêng)
         if "[START_GRAPHVIZ]" in line:
             is_in_graphviz_section = True
             continue
@@ -236,6 +234,7 @@ def create_word_document(markdown_text, lesson_title):
                             current_row = table.add_row().cells
 
                         for cell_index, cell_content in enumerate([gv_content, hs_content]):
+                            # Nội dung trong bảng vẫn cần dùng `clean_content` để loại bỏ các lỗi khác
                             cell_content_cleaned = clean_content(cell_content)
                             content_lines = cell_content_cleaned.split('\n')
                             
@@ -254,22 +253,56 @@ def create_word_document(markdown_text, lesson_title):
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
             
-            # TRỌNG TÂM SỬA LỖI: HIỆN PHẦN VI VÀ MÃ CODE
+            # TRỌNG TÂM SỬA LỖI: HIỆN PHẦN VI VÀ LẤY GỢI Ý TỪ CODE
             if clean_line.startswith("PHẦN VI."):
-                 document.add_heading(clean_line, level=2) # Thêm tiêu đề Phần VI
-                 # Tìm mã Graphviz và thêm vào Word dưới dạng text thường
+                 document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
+                 
+                 # 1. Tìm mã Graphviz
                  graph_start = markdown_text.find("[START_GRAPHVIZ]")
                  graph_end = markdown_text.find("[END_GRAPHVIZ]")
+                 
                  if graph_start != -1 and graph_end != -1:
                      # Cắt chuỗi mã code
-                     graph_code_for_word = markdown_text[graph_start + len("[START_GRAPHVIZ]"):graph_end].strip()
+                     graph_code_content = markdown_text[graph_start + len("[START_GRAPHVIZ]"):graph_end].strip()
 
-                     document.add_paragraph("\n(Mã nguồn Graphviz DOT để tham khảo. Sơ đồ trực quan được hiển thị trên giao diện web):\n")
-                     # Thêm mã nguồn vào Word
-                     p = document.add_paragraph(graph_code_for_word)
-                     # Tạo một border (hộp) cho code để dễ nhìn
-                     p.paragraph_format.left_indent = Inches(0.5)
-                     p.paragraph_format.right_indent = Inches(0.5)
+                     # 2. Regex để tìm tất cả các nhãn (label)
+                     # re.DOTALL để khớp với các nhãn có xuống dòng (\n)
+                     labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
+                     
+                     # 3. Lọc bỏ các label rỗng và trùng lặp
+                     unique_labels = sorted(list(set(label.strip() for label in labels if label.strip())))
+
+                     if unique_labels:
+                         # Hướng dẫn
+                         document.add_paragraph("(Dưới đây là gợi ý nội dung chính (Key Ideas) được trích xuất từ sơ đồ tư duy do AI tạo. Giáo viên có thể tùy chỉnh hoặc thay thế bằng hình ảnh sơ đồ từ giao diện web.)")
+                         document.add_paragraph() # Dòng trống
+
+                         # 4. Thêm các label vào Word dưới dạng List
+                         for label in unique_labels:
+                             # Chia nhãn thành nhiều phần nếu có xuống dòng (\n)
+                             label_parts = label.split(r'\n')
+                             
+                             # Nhãn chính (main bullet)
+                             main_label = label_parts[0].strip().replace('**', '') 
+                             if main_label:
+                                 # Heuristic: Bỏ qua nhãn trung tâm (center node) quá ngắn (thường là tên bài)
+                                 if len(main_label) > 10: 
+                                     p = document.add_paragraph(f"• {main_label}")
+                                     p.paragraph_format.left_indent = Inches(0.25)
+                                     
+                             # Thêm các dòng phụ (sub bullet)
+                             for part in label_parts[1:]:
+                                 part = part.strip().replace('**', '') 
+                                 if part:
+                                     p = document.add_paragraph(f"  - {part}")
+                                     p.paragraph_format.left_indent = Inches(0.5)
+
+                     else:
+                         document.add_paragraph("(AI đã tạo Graphviz nhưng không tìm thấy nhãn nội dung (label) để trích xuất gợi ý. Vui lòng kiểm tra lại yêu cầu.)")
+                     
+                 else:
+                     document.add_paragraph("(Không tìm thấy mã nguồn Graphviz. Có thể yêu cầu tạo sơ đồ tư duy là 'KHÔNG'.)")
+                 
                  continue # Bỏ qua dòng tiêu đề đã được xử lý
             
             # Tiêu đề các phần khác
@@ -416,7 +449,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
-                # Hàm create_word_document đã được sửa để loại bỏ ** và hiện Phần VI (code)
+                # Hàm create_word_document đã được sửa để loại bỏ ** và hiện Phần VI (Gợi ý Outline)
                 word_bytes = create_word_document(cleaned_text, ten_bai)
 
 
