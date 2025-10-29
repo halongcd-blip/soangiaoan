@@ -412,7 +412,7 @@ def create_word_document(markdown_text, lesson_title):
 # -----------------------------------------------------------------
 
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
-st.title("🤖 Trợ lý Soạn giáo án Tiểu học")
+st.title("🤖 Trợ lý Soạn Kế hoạch bài dạy Tiểu học")
 st.write("Sản phẩm của thầy giáo Hoàng Trọng Nghĩa.")
 st.markdown("*(Kế hoạch bài dạy được biên soạn theo chuẩn Chương trình GDPT 2018)*")
 
@@ -437,11 +437,11 @@ tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=Fal
 tao_mindmap = st.checkbox("8. Yêu cầu tạo Sơ đồ tư duy trực quan", value=True)
 
 # Nút bấm để tạo giáo án
-if st.button("🚀 Tạo Giáo án ngay!"):
+if st.button("🚀 Tạo KH bài dạy ngay!"):
     if not mon_hoc or not lop or not bo_sach or not ten_bai or not yeu_cau:
         st.error("Vui lòng nhập đầy đủ cả 5 thông tin!")
     else:
-        with st.spinner("Trợ lý AI đang soạn giáo án, vui lòng chờ trong giây lát..."):
+        with st.spinner("Trợ lý AI đang soạn kế hoạch bài dạy, vui lòng chờ trong giây lát..."):
             try:
                 # Logic cho Biến số Tùy chọn 1 (Tạo Phiếu Bài Tập)
                 yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
@@ -483,7 +483,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
                 # 6. Hiển thị kết quả
                 st.balloons()
-                st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
+                st.subheader("🎉 Kế hoạch bài dạy của bạn đã sẵn sàng:")
 
                 # LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
                 full_text = response.text
@@ -552,7 +552,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
 
                 st.download_button(
-                    label="⬇️ Tải về Giáo án (Word)",
+                    label="⬇️ Tải về Kế hoạch bài dạy (Word)",
                     data=word_bytes,
                     file_name=f"GA_{ten_bai.replace(' ', '_')}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -574,4 +574,5 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
