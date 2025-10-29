@@ -99,12 +99,12 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 ---
 
 **PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)**
-(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LI LIỆU ĐẦU VÀO số 7 `{yeu_cau_mindmap}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này.)
+(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 7 `{yeu_cau_mindmap}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này.)
 
 - Nếu `{yeu_cau_mindmap}` là 'CÓ':
 - **YÊU CẦU BẮT BUỘC:** Bạn PHẢI tạo một Sơ đồ tư duy (Mind Map) tóm tắt nội dung chính của bài học {ten_bai} bằng **ngôn ngữ Graphviz DOT**.
 - **TUYỆT ĐỐI KHÔNG SỬ DỤNG:** Markdown, gạch đầu dòng, hay bất kỳ định dạng nào khác ngoài mã Graphviz DOT thuần túy trong phần này.
-- **TUYỆT ĐỐI KHÔNG TẠO TIÊU ĐỀ "PHẦN VI." HAY BẤT CỨ DÒNG VĂN BẢN NÀO TRƯỚC THẺ START_GRAPHVIZ**.
+- **TUYỆT ĐỐI KHÔNG TẠO BẤT CỨ TIÊU ĐỀ NÀO** (ví dụ: PHẦN VI.) **HAY DÒNG VĂN BẢN NÀO TRƯỚC THẺ START_GRAPHVIZ**.
 - Sơ đồ phải rõ ràng, phân cấp, sử dụng tiếng Việt có dấu trong các nhãn (label). Sử dụng `layout=twopi` hoặc `layout=neato` để có bố cục tỏa tròn đẹp mắt.
 - **QUAN TRỌNG:** Bọc toàn bộ mã code Graphviz DOT trong 2 thẻ **DUY NHẤT**: `[START_GRAPHVIZ]` ở dòng đầu tiên và `[END_GRAPHVIZ]` ở dòng cuối cùng của mã nguồn. Không thêm bất kỳ văn bản nào khác bên ngoài hai thẻ này trong phần VI.
 
@@ -131,7 +131,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOẠI BỎ TIÊU ĐỀ MÃ NGUỒN GRAPHVIZ)
+# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOẠI BỎ TIÊU ĐỀ MÃ NGUỒN GRAPHVIZ VÀ LỖI HÀNG TRỐNG)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
@@ -150,7 +150,7 @@ def create_word_document(markdown_text, lesson_title):
 
     lines = markdown_text.split('\n')
     is_in_table_section = False
-    is_in_part_vi = False # <-- Cờ mới để theo dõi PHẦN VI
+    is_in_part_vi = False 
     table = None
     
     # --------------------------------------------------------------------------------
@@ -170,7 +170,6 @@ def create_word_document(markdown_text, lesson_title):
             graph_code_content += line + "\n"
     # --------------------------------------------------------------------------------
 
-    current_row = None
     
     # Lặp qua toàn bộ nội dung gốc để tạo Word document
     for line in lines: 
@@ -179,7 +178,7 @@ def create_word_document(markdown_text, lesson_title):
             continue
             
         # *******************************************************************
-        # BƯỚC SỬA LỖI CẤP THIẾT: BẮT ĐẦU VÀ KẾT THÚC XỬ LÝ PHẦN VI
+        # BƯỚC SỬA LỖI 1: BẮT ĐẦU VÀ KẾT THÚC XỬ LÝ PHẦN VI (LOẠI BỎ CODE THÔ)
         # *******************************************************************
         
         # Bỏ qua dòng tiêu đề "PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)" (nếu AI có tạo)
@@ -192,10 +191,9 @@ def create_word_document(markdown_text, lesson_title):
             is_in_part_vi = True
             continue
             
-        # Kết thúc code Graphviz -> Tắt cờ PHẦN VI và BẮT ĐẦU CHUYỂN SANG PHẦN TỰ CHÈN OUTLINE
+        # Kết thúc code Graphviz -> Tắt cờ PHẦN VI và DỪNG VÒNG LẶP
         if "[END_GRAPHVIZ]" in line:
             is_in_part_vi = False
-            # Dừng vòng lặp tại đây để xử lý PHẦN VI TỰ ĐỘNG (outline) sau vòng lặp
             break 
             
         # Bỏ qua nội dung trong PHẦN VI (Tức là toàn bộ mã Graphviz DOT)
@@ -203,7 +201,6 @@ def create_word_document(markdown_text, lesson_title):
             continue
             
         # DỪNG LẠI TRƯỚC KHI XỬ LÝ BẤT KỲ DÒNG NÀO LÀ "PHẦN VI."
-        # Đảm bảo nội dung thô (Graphviz) không bao giờ được thêm vào.
         if line.startswith("PHẦN VI."):
              break 
              
@@ -223,17 +220,21 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells = table.rows[0].cells
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
-            current_row = table.add_row().cells
             continue
 
         if is_in_table_section and table is not None:
             if line.startswith('| :---'):
                 continue
 
+            # **BƯỚC SỬA LỖI 2: Xử lý mỗi dòng Markdown là một dòng Word mới**
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
 
                 if len(cells_content) == 2:
+                    
+                    # **TẠO DÒNG MỚI ĐÚNG NƠI:** Mỗi dòng Markdown hợp lệ sẽ tạo 1 dòng Word mới
+                    current_row = table.add_row().cells 
+
                     gv_content = cells_content[0].strip().replace('**', '')
                     hs_content = cells_content[1].strip().replace('**', '')
 
@@ -241,18 +242,15 @@ def create_word_document(markdown_text, lesson_title):
                     is_main_header = ACTIVITY_HEADERS_PATTERN.match(gv_content)
                     
                     if is_main_header:
+                        # 1. Xử lý Dòng Tiêu đề Hoạt động (Merge Cell)
                         title = gv_content.strip().strip('*').strip()
-                        current_row = table.add_row().cells
                         current_row[0].merge(current_row[1])
                         p = current_row[0].add_paragraph(title)
                         p.runs[0].bold = True
-                        current_row = table.add_row().cells 
-                        continue
-                    
+                        # KHÔNG TẠO DÒNG THỪA. Dòng 'Mục tiêu' sẽ được xử lý ở lần lặp tiếp theo.
+                        
                     else:
-                        if current_row is None:
-                            current_row = table.add_row().cells
-
+                        # 2. Xử lý Dòng Nội dung Thường
                         for cell_index, cell_content in enumerate([gv_content, hs_content]):
                             cell_content_cleaned = clean_content(cell_content)
                             content_lines = cell_content_cleaned.split('\n')
@@ -265,8 +263,9 @@ def create_word_document(markdown_text, lesson_title):
                                     p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
                                 else:
                                     current_row[cell_index].add_paragraph(content_line)
-                    continue
-            current_row = table.add_row().cells
+                    continue # Bỏ qua phần còn lại của khối if, chuyển sang dòng tiếp theo
+            
+            # **LOẠI BỎ DÒNG LỖI CŨ:** Không còn dòng nào tạo row thừa ở đây nữa.
             
         # --------------------------------------------------------------------------------
         # XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V)
@@ -288,7 +287,7 @@ def create_word_document(markdown_text, lesson_title):
 
 
     # *******************************************************************
-    # 2. XỬ LÝ PHẦN VI (ĐẢM BẢO TIÊU ĐỀ VÀ NỘI DUNG GỢI Ý ĐÚNG)
+    # 3. XỬ LÝ PHẦN VI (ĐẢM BẢO TIÊU ĐỀ VÀ NỘI DUNG GỢI Ý ĐÚNG)
     # *******************************************************************
     # Tiêu đề chuẩn PHẦN VI sẽ được thêm vào ĐÚNG 1 LẦN
     document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
@@ -305,13 +304,10 @@ def create_word_document(markdown_text, lesson_title):
             document.add_paragraph() 
 
             # Lấy tiêu đề chính (thường là label của nút center)
-            # Thường là nút có nhãn khớp với tên bài học và có độ dài trên 10 ký tự (để lọc nhãn node)
             center_label = next((label for label in unique_labels if lesson_title.upper() in label.upper() and len(label) > 10), None)
             
             # 1. Thêm nhãn trung tâm (Nếu tìm thấy)
             if center_label:
-                # Nhãn trung tâm (In đậm, Gạch đầu dòng cấp 1)
-                # Tách nhãn thành các phần nếu có \n
                 center_label_parts = center_label.replace(r'\n', ' | ').split('|')
                 
                 p = document.add_paragraph(f"• **{center_label_parts[0].replace('**', '').strip()}**", style='List Bullet')
@@ -322,11 +318,10 @@ def create_word_document(markdown_text, lesson_title):
             
             # 2. Thêm các nhánh chính và nhánh phụ
             for label in unique_labels:
-                # Lọc bỏ các label quá ngắn hoặc là tên biến (ví dụ: 'center', 'Nhanh1')
+                # Lọc bỏ các label quá ngắn hoặc là tên biến 
                 if (len(label) < 10 and not any(c.isalpha() for c in label)) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung", "kết quả", "cach_lam", "luyen_tap", "van_dung", "muc_tieu"]:
                     continue
 
-                # Xử lý các dòng xuống dòng (\n) trong nhãn
                 processed_label = label.replace(r'\n', '\n')
                 label_parts = processed_label.split('\n')
                 
@@ -513,7 +508,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
 """
-Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
+Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
 
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
