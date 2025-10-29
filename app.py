@@ -4,33 +4,20 @@ from docx import Document
 from io import BytesIO
 import re # Cần để làm sạch Markdown
 from docx.shared import Inches
+from PIL import Image
 
 # -----------------------------------------------------------------
-# IMPORT THƯ VIỆN
+# 1. CẤU HÌNH "BỘ NÃO" AI (GIỮ NGUYÊN)
 # -----------------------------------------------------------------
 import google.generativeai as genai
-from PIL import Image # Thư viện xử lý ảnh Pillow
-# -----------------------------------------------------------------
 
-
-# -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI
-# -----------------------------------------------------------------
-
-# LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    # Dùng API Key giả cho môi trường giả lập, bạn cần thay bằng API Key thật
     API_KEY = "FAKE_API_KEY_FOR_DEMO" 
 
-# Cấu hình API key cho thư viện Gemini (Chỉ truyền API Key để tránh lỗi)
 genai.configure(api_key=API_KEY)
-
-# Sử dụng model gemini-2.5-flash (ổn định nhất, hỗ trợ ảnh, không dùng -latest)
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
-# -----------------------------------------------------------------
-
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo (GIỮ NGUYÊN)
 PROMPT_GOC = """
@@ -139,21 +126,17 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 ---
 Hãy bắt đầu tạo giáo án.
 """
-# ==================================================================
-# KẾT THÚC PHẦN PROMPT (GIỮ NGUYÊN)
-# ==================================================================
 
-# Các hàm xử lý Word (ĐÃ SỬA CHỮA LỖI ** VÀ PHẦN VI - TẬP TRUNG VÀO LOGIC PARSING)
+# -----------------------------------------------------------------
+# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI TRIỆT ĐỂ Ở PHẦN VI)
+# -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
     text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
-
     # 2. Loại bỏ TẤT CẢ các thẻ HTML (bao gồm <br>)
     text = re.sub(r'<[^>]+>', '', text, flags=re.IGNORECASE).strip()
-
     # 3. Loại bỏ dấu ** thừa trong văn bản thường
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text).strip() # Loại bỏ **...** và giữ lại nội dung bên trong
-
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text).strip()
     return text
 
 def create_word_document(markdown_text, lesson_title):
@@ -165,39 +148,59 @@ def create_word_document(markdown_text, lesson_title):
     lines = markdown_text.split('\n')
     is_in_table_section = False
     table = None
-    current_row = None
     
     # --------------------------------------------------------------------------------
-    # 1. LƯU MÃ GRAPHVIZ RIÊNG ĐỂ XỬ LÝ LATER (Tách code ra khỏi dòng chảy chính)
+    # 1. LƯU MÃ GRAPHVIZ RIÊNG ĐỂ XỬ LÝ
     # --------------------------------------------------------------------------------
     graph_code_content = ""
     parsing_graph = False
     
+    # Tách mã Graphviz ra khỏi nội dung
     for line in lines:
         if "[START_GRAPHVIZ]" in line:
             parsing_graph = True
             continue
         if "[END_GRAPHVIZ]" in line:
             parsing_graph = False
-            break # Dừng ngay khi tìm thấy thẻ đóng
+            break 
         if parsing_graph:
             graph_code_content += line + "\n"
     # --------------------------------------------------------------------------------
 
-
+    
+    # BƯỚC SỬA LỖI TRIỆT ĐỂ: TẠO BẢN TEXT ĐÃ LÀM SẠCH GRAPHVIZ
+    overall_clean_lines = []
+    
+    # Dùng regex để tìm và thay thế PHẦN VI thành tiêu đề mong muốn
+    # Lọc bỏ toàn bộ nội dung trong thẻ GRAPHVIZ
+    
+    is_in_graphviz_block = False
     for line in lines:
+        if "[START_GRAPHVIZ]" in line:
+            is_in_graphviz_block = True
+            continue
+        if "[END_GRAPHVIZ]" in line:
+            is_in_graphviz_block = False
+            continue
+            
+        if is_in_graphviz_block:
+            continue # Bỏ qua tất cả các dòng code Graphviz
+
+        # Thay thế tiêu đề PHẦN VI gốc bằng tiêu đề Outline
+        if line.strip().startswith("PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)"):
+             overall_clean_lines.append("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY")
+        else:
+             overall_clean_lines.append(line)
+
+    
+    
+    current_row = None
+    
+    for line in overall_clean_lines: # Dùng bản đã làm sạch
         line = line.strip()
         if not line:
             continue
             
-        # Bỏ qua mọi thứ trong khối Graphviz khi xử lý nội dung Word
-        if "[START_GRAPHVIZ]" in line or "[END_GRAPHVIZ]" in line:
-            continue
-        
-        # Bỏ qua nội dung Graphviz đã được lưu
-        if graph_code_content.strip() and line.strip() in graph_code_content.split('\n'):
-            continue
-        
         # --------------------------------------------------------------------------------
         # XỬ LÝ BẢNG CHÍNH (HOẠT ĐỘNG)
         # --------------------------------------------------------------------------------
@@ -260,16 +263,16 @@ def create_word_document(markdown_text, lesson_title):
                                 else:
                                     current_row[cell_index].add_paragraph(content_line)
                     continue
-
+            current_row = table.add_row().cells # Thêm dòng mới sau khi xử lý xong một cặp nội dung
+            
         # --------------------------------------------------------------------------------
         # XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V, VI)
         # --------------------------------------------------------------------------------
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
             
-            # XỬ LÝ PHẦN VI: TẠO GỢI Ý OUTLINE TỪ MÃ GRAPHVIZ ĐÃ LƯU
-            if clean_line.startswith("PHẦN VI."):
-                 # ĐẢM BẢO TIÊU ĐỀ LUÔN CHÍNH XÁC
+            # XỬ LÝ PHẦN VI: GỢI Ý SƠ ĐỒ TƯ DUY
+            if clean_line.startswith("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY"):
                  document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
                  
                  if graph_code_content.strip():
@@ -299,9 +302,9 @@ def create_word_document(markdown_text, lesson_title):
                              # Thêm các dòng phụ (sub bullet)
                              for part in label_parts[1:]:
                                  part = part.strip().replace('**', '') 
-                                 if part and len(part) > 3: # Loại bỏ các phần quá ngắn
+                                 if part and len(part) > 3: 
                                      p = document.add_paragraph(f"  - {part}")
-                                     p.style = 'List Continue 2' # Style cho gạch đầu dòng cấp 2
+                                     p.style = 'List Continue 2' 
                                      p.paragraph_format.left_indent = Inches(0.5)
 
                      else:
@@ -331,6 +334,8 @@ def create_word_document(markdown_text, lesson_title):
     document.save(bio)
     bio.seek(0)
     return bio
+
+
 # -----------------------------------------------------------------
 # 2. XÂY DỰNG GIAO DIỆN "CHAT BOX" (Web App) (GIỮ NGUYÊN)
 # -----------------------------------------------------------------
@@ -461,7 +466,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
-                # Hàm create_word_document đã được sửa để tạo GỢI Ý OUTLINE
+                # Hàm create_word_document đã được sửa để tạo GỢI Ý OUTLINE và làm sạch code thô
                 word_bytes = create_word_document(cleaned_text, ten_bai)
 
 
