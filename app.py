@@ -193,9 +193,7 @@ def create_word_document(markdown_text, lesson_title):
              continue 
              
         # *******************************************************************
-        # BƯỚC 2: VỊ TRÍ CỦA MÃ BẠN HỎI (XÓA DÒNG TIÊU ĐỀ THỪA TRONG WORD)
-        # Xóa cả tiêu đề PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)
-        cleaned_text = re.sub(r'PHẦN\s*VI\.\s*SƠ ĐỒ TƯ DUY\s*\(MÃ NGUỒN GRAPHVIZ\)', '', cleaned_text, flags=re.IGNORECASE)
+        
         # --------------------------------------------------------------------------------
         # BƯỚC 2: XỬ LÝ BẢNG CHÍNH (HOẠT ĐỘNG) - PHẦN III
         # --------------------------------------------------------------------------------
