@@ -106,13 +106,6 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 - **TUYỆT ĐỐI KHÔNG TẠO BẤT CỨ TIÊU ĐỀ NÀO** (ví dụ: PHẦN VI., hay bất kỳ dòng văn bản nào khác) **TRƯỚC THẺ START_GRAPHVIZ**.
 - Sơ đồ phải rõ ràng, phân cấp, sử dụng tiếng Việt có dấu trong các nhãn (label) và **phải có nhãn mô tả ý tưởng chi tiết (để chức năng trích xuất gợi ý hoạt động hoạt động được)**. Sử dụng `layout=twopi` hoặc `layout=neato` để có bố cục tỏa tròn đẹp mắt.
 - **QUAN TRỌNG:** Bọc toàn bộ mã code Graphviz DOT trong 2 thẻ **DUY NHẤT**: `[START_GRAPHVIZ]` ở dòng đầu tiên và `[END_GRAPHVIZ]` ở dòng cuối cùng của mã nguồn. Không thêm bất kỳ văn bản nào khác bên ngoài hai thẻ này trong phần VI.
-# 💡 BỔ SUNG YÊU CẦU SINH LỜI GIẢI CHO HOẠT ĐỘNG 3:
-- Khi soạn **Phần III. Các hoạt động dạy học chủ yếu**, đặc biệt trong **Hoạt động 3: Luyện tập / Thực hành**, nếu giáo viên đưa ra các bài tập (ví dụ: Bài 1, Bài 2, Bài 3...), bạn PHẢI:
-  * Thêm **lời giải hoặc gợi ý đáp án chi tiết** ngay trong **cột "Hoạt động của giáo viên"**, ngay sau khi nêu bài tập tương ứng.
-  * Lời giải có thể trình bày theo dạng gợi ý (ví dụ: “Đáp án đúng là...”, “HS cần viết...”, “Kết quả đúng: ...”) để GV tham khảo khi chữa bài.
-  * Định dạng lời giải bằng dấu gạch đầu dòng (`*`) để đồng bộ với các bước khác.
-  * KHÔNG chèn lời giải vào cột "Hoạt động của học sinh".
-  * Giữ phong cách diễn đạt tự nhiên, thân thiện, ngắn gọn.
 
 ---
 Hãy bắt đầu tạo giáo án.
@@ -581,7 +574,3 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-
-
-
-
