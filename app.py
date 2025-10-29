@@ -112,15 +112,13 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOGIC DÒNG BẢNG THỪA VÀ LỖI INSERT_BEFORE)
+# CÁC HÀM XỬ LÝ (SỬA LỖI LOGIC ĐÓNG BẢNG PREMATURELY)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
     text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
     # 2. Loại bỏ TẤT CẢ các thẻ HTML (bao gồm <br>)
     text = re.sub(r'<[^>]+>', '', text, flags=re.IGNORECASE).strip()
-    # 3. Loại bỏ dấu ** thừa trong văn bản thường
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text).strip()
     return text
 
 def create_word_document(markdown_text, lesson_title):
@@ -129,7 +127,6 @@ def create_word_document(markdown_text, lesson_title):
     # 1. Định nghĩa style (đã được tối ưu ở phiên bản trước)
     try:
         style_id = 1
-        from docx.enum.style import WD_STYLE_TYPE
         from docx.shared import Pt
              
         document.styles.add_style('ListBulletCustom', WD_STYLE_TYPE.PARAGRAPH)
@@ -149,7 +146,7 @@ def create_word_document(markdown_text, lesson_title):
     lines = markdown_text.split('\n')
     is_in_table_section = False
     is_in_part_vi = False 
-    is_in_part_iii_section = False # <-- MỚI: Cờ lọc nội dung thừa trong Phần III
+    is_in_part_iii_section = False 
     table = None
     
     # --------------------------------------------------------------------------------
@@ -225,7 +222,8 @@ def create_word_document(markdown_text, lesson_title):
         if is_in_table_section and table is not None:
             if line.startswith('| :---'):
                 continue
-
+                
+            # Trường hợp 1: Dòng là một hàng hợp lệ trong bảng Markdown
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
 
@@ -264,6 +262,9 @@ def create_word_document(markdown_text, lesson_title):
 
                         # Xử lý nội dung cho cột GV và HS
                         for cell_index, cell_content in enumerate([gv_content, hs_content]):
+                            # Loại bỏ các dấu ** thừa trong nội dung chi tiết
+                            cell_content = re.sub(r'\*\*(.*?)\*\*', r'\1', cell_content)
+                            
                             content_lines = cell_content.split('\n')
                             
                             for content_line in content_lines:
@@ -272,28 +273,36 @@ def create_word_document(markdown_text, lesson_title):
                                 
                                 # Chỉ định dấu gạch đầu dòng (Sử dụng list bullet chuẩn)
                                 if content_line.startswith('*') or content_line.startswith('-'):
-                                    clean_text = content_line.lstrip('*- ').strip().replace('**', '')
+                                    clean_text = content_line.lstrip('*- ').strip()
                                     # Tạo paragraph với style List Paragraph
                                     p = current_row[cell_index].add_paragraph(style='List Paragraph') 
                                     p.add_run('•\t') # Thêm dấu bullet thủ công
                                     p.add_run(clean_text)
                                     p.paragraph_format.left_indent = Inches(0.25)
                                 else:
-                                    current_row[cell_index].add_paragraph(content_line.replace('**', ''))
+                                    current_row[cell_index].add_paragraph(content_line)
                     
                     continue # Chuyển sang dòng tiếp theo trong Markdown
             
-            # Nếu dòng không phải dòng bảng, coi như bảng đã kết thúc
-            is_in_table_section = False
+            # Trường hợp 2 (FIX QUAN TRỌNG): Chỉ đóng bảng nếu gặp dấu phân cách '---' hoặc tiêu đề 'PHẦN IV.'
+            if line == '---' or re.match(r'^PHẦN\sIV\.', line, re.IGNORECASE):
+                is_in_table_section = False
+                continue
+                
+            # Trường hợp 3: Nếu là dòng bất thường (text trôi nổi) nhưng chưa đến điểm kết thúc, BỎ QUA dòng đó.
+            # Điều này giúp bảng vẫn tiếp tục nếu AI chèn text rác giữa HĐ 3 và HĐ 4.
+            continue 
             
-        # --------------------------------------------------------------------------------
-        # BƯỚC 3: XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V) + LỌC TEXT THỪA PHẦN III
-        # --------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------
+            # BƯỚC 3: XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V) + LỌC TEXT THỪA PHẦN III
+            # --------------------------------------------------------------------------------
+            
+        # Bắt các tiêu đề chính (I, II, IV, V)
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
             document.add_heading(clean_line, level=2)
             
-            # Bật cờ lọc nếu đây là Tiêu đề III.
+            # Bật cờ lọc nếu đây là Tiêu đề III. (Sau đó sẽ bị tắt khi tìm thấy bảng)
             if clean_line.startswith('III.'):
                 is_in_part_iii_section = True
             else:
@@ -329,6 +338,7 @@ def create_word_document(markdown_text, lesson_title):
     document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
                  
     if graph_code_content.strip():
+        # Lọc các nhãn không cần thiết
         labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
         unique_labels = sorted(list(set(label.strip() for label in labels if label.strip())))
 
@@ -336,23 +346,24 @@ def create_word_document(markdown_text, lesson_title):
             document.add_paragraph("(Dưới đây là gợi ý nội dung chính (Key Ideas) được trích xuất từ sơ đồ tư duy do AI tạo. Giáo viên có thể dựa vào đây để vẽ hoặc chèn hình ảnh sơ đồ từ giao diện web.)")
             document.add_paragraph() 
 
-            # Lọc nhãn trung tâm/chính
+            # Lọc nhãn trung tâm/chính (lấy nhãn dài nhất có chứa lesson_title)
             center_label = next((label for label in unique_labels if lesson_title.upper() in label.upper() and len(label) > 10), None)
             
-            if center_label:
-                # 1. Thêm nhãn trung tâm (Nhánh cấp 1 - Dùng dòng text đậm)
+            if center_label and center_label in unique_labels:
+                
                 center_label_parts = center_label.replace(r'\n', ' | ').split('|')
                 
+                # 1. Thêm nhãn trung tâm (Nhánh cấp 1 - Dùng dòng text đậm)
                 p = document.add_paragraph(f"- {center_label_parts[0].replace('**', '').strip()}")
                 p.runs[0].bold = True
                 p.style = 'List Paragraph' 
                 p.paragraph_format.left_indent = Inches(0.25)
                 
-                if center_label in unique_labels:
-                    unique_labels.remove(center_label)
+                unique_labels.remove(center_label)
             
             # 2. Thêm các nhánh chính và nhánh phụ (Nhánh cấp 2, 3)
             for label in unique_labels:
+                # Bỏ qua các nhãn ngắn, chỉ là tên node (như "center", "nhanh1")
                 if (len(label) < 10 and not any(c.isalpha() for c in label)) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung", "kết quả", "cach_lam", "luyen_tap", "van_dung", "muc_tieu"]:
                     continue
 
@@ -529,7 +540,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                         st.markdown(cleaned_text_display)
                 else:
                     st.markdown(cleaned_text_display)
-                # --- KẾT THÚC KHỐI LOGIC SƠ ĐỒ TƯ DUY ---
+                # --- KẾT THÚC KHỐI LOGIC SƠ ĐỒ TƯ DU DUY ---
 
 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
