@@ -285,7 +285,14 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 
                 # LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
                 full_text = response.text
-                start_index = full_text.find("I. Yêu cầu cần đạt") 
+
+                # ************ DÒNG SỬA LỖI CỐT LÕI: LỌC SẠCH THẺ <br> ************
+                # Sử dụng re.sub để thay thế mọi sự xuất hiện của <br> (có thể có khoảng trắng) bằng dấu xuống dòng Markdown (hoặc khoảng trắng)
+                # THAY THẾ <br> BẰNG XUỐNG DÒNG (Dùng xuống dòng Markdown \n)
+                full_text = re.sub(r'<\s*br\s*\/?>', '\n', full_text, flags=re.IGNORECASE) 
+                # *******************************************************************
+
+                start_index = full_text.find("I. Yêu cầu cần đạt")
                 
                 if start_index != -1:
                     cleaned_text = full_text[start_index:]
@@ -316,6 +323,7 @@ Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tha
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
