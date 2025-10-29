@@ -28,9 +28,8 @@ except:
 genai.configure(api_key=API_KEY)
 
 # -----------------------------------------------------------------
-# SỬA LỖI 404 TẠI ĐÂY
+# SỬ DỤNG MODEL "gemini-pro-vision" LÀ CHÍNH XÁC
 # -----------------------------------------------------------------
-# Chuyển sang model "gemini-pro-vision" (ổn định nhất cho ảnh + text)
 model = genai.GenerativeModel(model_name="gemini-pro-vision") 
 # -----------------------------------------------------------------
 
