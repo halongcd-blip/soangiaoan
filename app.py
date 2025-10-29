@@ -50,7 +50,8 @@ DỮ LIỆU ĐẦU VÀO:
 3.  **Bộ sách:** {bo_sach}
 4.  **Tên bài học/Chủ đề:** {ten_bai}
 5.  **Yêu cầu cần đạt (Lấy từ Chương trình môn học):** {yeu_cau}
-6.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
+6.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu}
+7.  **Yêu cầu tạo sơ đồ tư duy:** {yeu_cau_mindmap} # <-- MỚI: Thêm biến số 7
 
 YÊU CẦU VỀ ĐỊNH DẠNG:
 Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
@@ -67,12 +68,9 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 2.  **Chuẩn bị của học sinh (HS):** (SGK, Vở bài tập, bút màu...)
 
 **III. Các hoạt động dạy học chủ yếu**
-# SỬA LỖI 3: YÊU CẦU AI SOẠN KỸ HƠN VÀ DÙNG PP DẠY HỌC TÍCH CỰC
 **QUY TẮC QUAN TRỌNG VỀ NỘI DUNG:** Phần này PHẢI được soạn thật kỹ lưỡng, chi tiết. Ưu tiên sử dụng các phương pháp và kỹ thuật dạy học tích cực (ví dụ: KWL, Mảnh ghép, Khăn trải bàn, Góc học tập, Trạm học tập, Đóng vai, Sơ đồ tư duy...) để phát huy tối đa năng lực và phẩm chất của học sinh theo Chương trình GDPT 2018.
-
 **QUY TẮC QUAN TRỌNG VỀ BẢNG BIỂU:** Toàn bộ nội dung của mục 3 này PHẢI được trình bày trong **MỘT BẢNG MARKDOWN DUY NHẤT** có 2 cột.
 
-# SỬA LỖI 1: YÊU CẦU AI ĐỂ TRỐNG CỘT 2 Ở DÒNG HEADER
 | Hoạt động của giáo viên | Hoạt động của học sinh |
 | :--- | :--- |
 | **1. Hoạt động Mở đầu (Khởi động, Kết nối)** | |
@@ -111,6 +109,23 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 - Bao gồm 2-3 bài tập nhỏ (ví dụ: nối, điền từ, khoanh tròn).
 
 ---
+
+# <-- MỚI: Thêm PHẦN VI cho Sơ đồ tư duy
+**PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY (NẾU CÓ)**
+(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 7 `{yeu_cau_mindmap}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này.)
+
+- Nếu `{yeu_cau_mindmap}` là 'CÓ':
+- Hãy tạo một gợi ý Sơ đồ tư duy (Mind Map) tóm tắt nội dung chính của bài học {ten_bai}.
+- Sơ đồ phải được trình bày dưới dạng danh sách (bullet list) Markdown có cấu trúc phân cấp (dùng thụt lề).
+- **Trung tâm:** (Tên bài học)
+    - **Nhánh 1:** (Nội dung chính 1 của bài)
+        - (Chi tiết 1.1)
+        - (Chi tiết 1.2)
+    - **Nhánh 2:** (Nội dung chính 2 của bài)
+        - (Chi tiết 2.1)
+    - **Nhánh 3:** (Luyện tập/Vận dụng chính)
+
+---
 Hãy bắt đầu tạo giáo án.
 """
 # ==================================================================
@@ -118,13 +133,11 @@ Hãy bắt đầu tạo giáo án.
 # ==================================================================
 
 # Các hàm xử lý Word (Giữ nguyên)
-# SỬA LỖI 2 (Nâng cấp hàm clean_content):
 def clean_content(text):
-    # 1. Loại bỏ cụm "Cách tiến hành" (logic cũ)
+    # 1. Loại bỏ cụm "Cách tiến hành"
     text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
     
-    # 2. Loại bỏ TẤT CẢ các thẻ HTML (như <br>, <strong>, <div>)
-    # Đây là giải pháp đã khắc phục file Word của bạn
+    # 2. Loại bỏ TẤT CẢ các thẻ HTML (bao gồm <br>)
     text = re.sub(r'<[^>]+>', '', text, flags=re.IGNORECASE).strip()
     
     return text
@@ -163,6 +176,7 @@ def create_word_document(markdown_text, lesson_title):
             if line.startswith('| :---'):
                 continue
             
+            # Sửa lỗi: Cần tìm cả PHẦN V và PHẦN VI
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
                 is_in_table_section = False
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
@@ -173,7 +187,6 @@ def create_word_document(markdown_text, lesson_title):
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
                 if len(cells_content) == 2:
-                    # Chạy hàm clean_content đã được nâng cấp (Sửa lỗi 2)
                     gv_content = clean_content(cells_content[0])
                     hs_content = clean_content(cells_content[1])
                     
@@ -243,8 +256,12 @@ uploaded_file = st.file_uploader(
     type=["pdf", "png", "jpg", "jpeg"]
 )
 
-# 7. KHAI BÁO BIẾN CHO CHECKBOX
+# 7. KHAI BÁO BIẾN CHO CHECKBOX PHIẾU BÀI TẬP
 tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False)
+
+# <-- MỚI: Thêm Checkbox cho Sơ đồ tư duy
+tao_mindmap = st.checkbox("8. Yêu cầu tạo kèm Gợi ý Sơ đồ tư duy", value=False)
+
 
 # Nút bấm để tạo giáo án
 if st.button("🚀 Tạo Giáo án ngay!"):
@@ -255,18 +272,23 @@ if st.button("🚀 Tạo Giáo án ngay!"):
             try:
                 # Logic cho Biến số Tùy chọn 1 (Tạo Phiếu Bài Tập)
                 yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
+                
+                # <-- MỚI: Logic cho Biến số Tùy chọn 2 (Sơ đồ tư duy)
+                yeu_cau_mindmap_value = "CÓ" if tao_mindmap else "KHÔNG"
+
 
                 # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
                 content = [] 
 
-                # 2. Điền Prompt (6 biến số text)
+                # 2. Điền Prompt (7 biến số text)
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
                     lop=lop,
                     bo_sach=bo_sach,
                     ten_bai=ten_bai,
                     yeu_cau=yeu_cau,
-                    yeu_cau_phieu=yeu_cau_phieu_value
+                    yeu_cau_phieu=yeu_cau_phieu_value,
+                    yeu_cau_mindmap=yeu_cau_mindmap_value # <-- MỚI: Thêm biến số 7
                 )
 
                 # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
@@ -303,7 +325,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 else:
                     cleaned_text = full_text
 
-                # SỬA LỖI 2: LỌC "Cách tiến hành:" RA KHỎI PHẦN HIỂN THỊ WEB
+                # LỌC "Cách tiến hành:" RA KHỎI PHẦN HIỂN THỊ WEB
                 cleaned_text_display = re.sub(r'Cách tiến hành[:]*\s*', '', cleaned_text, flags=re.IGNORECASE)
                 
                 st.markdown(cleaned_text_display) # Hiển thị văn bản đã lọc
