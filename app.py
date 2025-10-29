@@ -436,7 +436,7 @@ tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=Fal
 tao_mindmap = st.checkbox("8. Yêu cầu tạo Sơ đồ tư duy trực quan", value=True)
 
 # Nút bấm để tạo giáo án
-if st.button("🚀 Tạo Giáo án ngay!"):
+if st.button("🚀 Tạo KH bài dạy ngay!"):
     if not mon_hoc or not lop or not bo_sach or not ten_bai or not yeu_cau:
         st.error("Vui lòng nhập đầy đủ cả 5 thông tin!")
     else:
@@ -548,7 +548,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
                 # Hàm create_word_document đã được cập nhật để loại bỏ nội dung thừa/mã thô
                 word_bytes = create_word_document(cleaned_text, ten_bai)
-                cleaned_text = re.sub(r'\[START_GRAPHVIZ\].*?\[END_GRAPHVIZ\]', '', markdown_text, flags=re.DOTALL | re.IGNORECASE)
+                
 
                 st.download_button(
                     label="⬇️ Tải về Kế hoạch bài dạy (Word)",
@@ -574,6 +574,7 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
