@@ -414,8 +414,8 @@ def create_word_document(markdown_text, lesson_title):
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
 st.markdown(
     """
-    <h1 style='text-align: center; line-height: 1.4; margin-bottom: 0px;'>🤖 Trợ lý Soạn Kế hoạch bài dạy khối</h1>
-    <h1 style='text-align: center; margin-top: 0px;'>Tiểu học</h1>
+    <h1 style='margin-bottom: 4px; line-height: 1.2;'>🤖 Trợ lý Soạn Kế hoạch bài dạy khối</h1>
+    <h1 style='margin-top: 4px; line-height: 1.2;'>Tiểu học</h1>
     """,
     unsafe_allow_html=True
 )
@@ -581,6 +581,7 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
