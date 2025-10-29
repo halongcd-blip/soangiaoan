@@ -30,7 +30,7 @@ genai.configure(api_key=API_KEY)
 
 # Khởi tạo mô hình AI (Sửa lại tên model cho đúng)
 # "gemini-2.5-flash" không tồn tại, có thể bạn muốn "gemini-1.5-flash"
-model = genai.GenerativeModel(model_name="gemini-1.5-flash") 
+model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
 
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
@@ -311,3 +311,4 @@ Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tha
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
