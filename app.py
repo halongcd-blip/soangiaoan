@@ -17,6 +17,10 @@ from PIL import Image # Thư viện xử lý ảnh Pillow
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
+# -----------------------------------------------------------------
+# 1. CẤU HÌNH "BỘ NÃO" AI
+# -----------------------------------------------------------------
+
 # LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -24,21 +28,12 @@ except:
     st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
     st.stop() # Dừng ứng dụng
 
-# Cấu hình API key cho thư viện Gemini
+# Cấu hình API key cho thư viện Gemini (Chỉ truyền API Key để tránh lỗi)
 genai.configure(api_key=API_KEY)
 
+# Sử dụng model gemini-2.5-flash (ổn định nhất, hỗ trợ ảnh, không dùng -latest)
+model = genai.GenerativeModel(model_name="gemini-2.5-flash") 
 # -----------------------------------------------------------------
-# SỬ DỤNG MODEL "gemini-pro-vision" LÀ CHÍNH XÁC
-# -----------------------------------------------------------------
-# Cấu hình API key cho thư viện Gemini
-# THAY ĐỔI CỐT LÕI: Thêm client_options để buộc SDK gọi API mới, bỏ qua lỗi v1beta
-genai.configure(
-    api_key=API_KEY,
-    client_options={"api_base": "https://generativelanguage.googleapis.com"}
-)
-
-# Sử dụng mô hình mới nhất, tốt nhất và ổn định nhất cho cả văn bản và ảnh
-model = genai.GenerativeModel(model_name="gemini-2.5-flash-latest")
 # -----------------------------------------------------------------
 
 
@@ -321,6 +316,7 @@ Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tha
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
 
