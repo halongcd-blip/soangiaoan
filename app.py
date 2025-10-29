@@ -112,7 +112,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOGIC DÒNG BẢNG THỪA)
+# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOGIC DÒNG BẢNG THỪA VÀ LỖI INSERT_BEFORE)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
@@ -129,9 +129,9 @@ def create_word_document(markdown_text, lesson_title):
     # 1. Định nghĩa style (đã được tối ưu ở phiên bản trước)
     try:
         style_id = 1
-        abstract_num = document.numbering_part.element.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}abstractNum')
-        if abstract_num is None:
-             abstract_num = document.numbering_part.element.xpath('//w:abstractNum')[0]
+        # Thêm các import thiếu nếu cần (đã thêm ở đầu file)
+        from docx.enum.style import WD_STYLE_TYPE
+        from docx.shared import Pt
              
         document.styles.add_style('ListBulletCustom', WD_STYLE_TYPE.PARAGRAPH)
         style = document.styles['ListBulletCustom']
@@ -233,12 +233,10 @@ def create_word_document(markdown_text, lesson_title):
                     gv_content = clean_content(cells_content[0].strip())
                     hs_content = clean_content(cells_content[1].strip())
                     
-                    # *******************************************************************
-                    # SỬA LỖI QUAN TRỌNG: NGĂN CHẶN DÒNG BẢNG RỖNG THỪA
+                    # QUAN TRỌNG: SỬA LỖI Ô TRỐNG (GIỮ NGUYÊN)
                     # Nếu nội dung của cả hai cột là rỗng (sau khi làm sạch), bỏ qua dòng này.
                     if not gv_content.strip() and not hs_content.strip():
                         continue
-                    # *******************************************************************
                     
                     # Regex để bắt các dòng Tiêu đề Hoạt động (chỉ bắt số thứ tự 1, 2, 3, 4)
                     ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\d+\.\sHoạt động.*)\s*', re.IGNORECASE | re.DOTALL)
@@ -270,11 +268,17 @@ def create_word_document(markdown_text, lesson_title):
                                 
                                 # Chỉ định dấu gạch đầu dòng (Sử dụng list bullet chuẩn)
                                 if content_line.startswith('*') or content_line.startswith('-'):
-                                    # Sử dụng style 'List Paragraph' để đảm bảo là bullet point (dấu chấm tròn)
-                                    p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip().replace('**', ''), style='List Paragraph')
-                                    # Cài đặt list level 1 (thường là dấu chấm)
+                                    # --- START FIX LỖI INSERT_BEFORE ---
+                                    clean_text = content_line.lstrip('*- ').strip().replace('**', '')
+                                    # Tạo paragraph với style List Paragraph (dễ dàng chỉnh sửa)
+                                    p = current_row[cell_index].add_paragraph(style='List Paragraph') 
+                                    # Thêm dấu bullet (•) thủ công vào đầu đoạn văn dưới dạng Run đầu tiên
+                                    p.add_run('•\t') 
+                                    # Thêm nội dung văn bản
+                                    p.add_run(clean_text)
+                                    # Đặt lề để thụt vào
                                     p.paragraph_format.left_indent = Inches(0.25)
-                                    p.add_run('•\t').insert_before() # Thêm thủ công dấu bullet
+                                    # --- END FIX LỖI INSERT_BEFORE ---
                                 else:
                                     current_row[cell_index].add_paragraph(content_line.replace('**', ''))
                     
@@ -298,10 +302,13 @@ def create_word_document(markdown_text, lesson_title):
 
         # Danh sách gạch đầu dòng (List Bullet - Dấu chấm)
         elif line.startswith('*') or line.startswith('-'):
-            p = document.add_paragraph(line.lstrip('*- ').strip().replace('**', ''))
-            # Sử dụng List Paragraph và thêm dấu bullet thủ công cho chắc chắn là dấu chấm tròn
-            p.style = 'List Paragraph'
-            p.add_run('•\t').insert_before()
+            # --- START FIX LỖI INSERT_BEFORE (CHO LIST THƯỜNG) ---
+            clean_text = line.lstrip('*- ').strip().replace('**', '')
+            p = document.add_paragraph(style='List Paragraph')
+            p.add_run('•\t') # Add the bullet run
+            p.add_run(clean_text) # Add the text run
+            # --- END FIX LỖI INSERT_BEFORE (CHO LIST THƯỜNG) ---
+
             p.paragraph_format.left_indent = Inches(0.25)
         else:
             # Văn bản thường 
@@ -309,29 +316,26 @@ def create_word_document(markdown_text, lesson_title):
 
 
     # *******************************************************************
-    # 4. XỬ LÝ PHẦN VI (GỢI Ý SƠ ĐỒ TƯ DUY) (GIỮ NGUYÊN)
+    # 4. XỬ LÝ PHẦN VI (GỢI Ý SƠ ĐỒ TƯ DUY) (ĐÃ SỬA LỖI INSERT_BEFORE)
     # *******************************************************************
     # Đảm bảo PHẦN VI. luôn được đặt ở cuối
     document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
                  
     if graph_code_content.strip():
-        # Regex để tìm tất cả các nhãn (label) - Đã được yêu cầu AI viết chi tiết
         labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
-        
-        # Lọc bỏ các label rỗng và trùng lặp
         unique_labels = sorted(list(set(label.strip() for label in labels if label.strip())))
 
         if unique_labels:
             document.add_paragraph("(Dưới đây là gợi ý nội dung chính (Key Ideas) được trích xuất từ sơ đồ tư duy do AI tạo. Giáo viên có thể dựa vào đây để vẽ hoặc chèn hình ảnh sơ đồ từ giao diện web.)")
             document.add_paragraph() 
 
-            # Lấy tiêu đề chính (thường là label của nút center)
             center_label = next((label for label in unique_labels if lesson_title.upper() in label.upper() and len(label) > 10), None)
             
             if center_label:
                 # 1. Thêm nhãn trung tâm (Nhánh cấp 1 - Dùng dấu gạch ngang)
                 center_label_parts = center_label.replace(r'\n', ' | ').split('|')
                 
+                # SỬA LẠI: Dùng dấu gạch ngang/dòng text đậm, không phải bullet
                 p = document.add_paragraph(f"- {center_label_parts[0].replace('**', '').strip()}")
                 p.runs[0].bold = True
                 p.style = 'List Paragraph' 
@@ -342,7 +346,6 @@ def create_word_document(markdown_text, lesson_title):
             
             # 2. Thêm các nhánh chính và nhánh phụ (Nhánh cấp 2, 3)
             for label in unique_labels:
-                # Lọc bỏ các label quá ngắn hoặc là tên biến 
                 if (len(label) < 10 and not any(c.isalpha() for c in label)) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung", "kết quả", "cach_lam", "luyen_tap", "van_dung", "muc_tieu"]:
                     continue
 
@@ -354,19 +357,23 @@ def create_word_document(markdown_text, lesson_title):
                 if not main_label or len(main_label) < 5: 
                     continue
                 
-                # Nhãn chính (main branch) - Dùng dấu chấm tròn
-                p = document.add_paragraph(f"  {main_label}")
-                p.style = 'List Paragraph'
-                p.add_run('•\t').insert_before() # Thêm dấu chấm tròn
+                # Nhãn chính (main branch) - Cấp 2
+                # --- FIX LỖI INSERT_BEFORE ---
+                p = document.add_paragraph(style='List Paragraph')
+                p.add_run('•\t')
+                p.add_run(f"  {main_label}")
+                # --- END FIX ---
                 p.paragraph_format.left_indent = Inches(0.5)
                         
-                # Thêm các dòng phụ (sub branch) - Dùng dấu chấm tròn
+                # Thêm các dòng phụ (sub branch) - Cấp 3
                 for part in label_parts[1:]:
                     part = part.strip().replace('**', '') 
                     if part and len(part) > 3: 
-                        p = document.add_paragraph(f"    {part}")
-                        p.style = 'List Paragraph'
-                        p.add_run('•\t').insert_before() # Thêm dấu chấm tròn
+                        # --- FIX LỖI INSERT_BEFORE ---
+                        p = document.add_paragraph(style='List Paragraph')
+                        p.add_run('•\t')
+                        p.add_run(f"    {part}")
+                        # --- END FIX ---
                         p.paragraph_format.left_indent = Inches(0.75)
 
         else:
