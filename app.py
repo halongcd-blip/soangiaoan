@@ -548,7 +548,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
                 # Hàm create_word_document đã được cập nhật để loại bỏ nội dung thừa/mã thô
                 word_bytes = create_word_document(cleaned_text, ten_bai)
-
+                cleaned_text = re.sub(r'\[START_GRAPHVIZ\].*?\[END_GRAPHVIZ\]', '', markdown_text, flags=re.DOTALL | re.IGNORECASE)
 
                 st.download_button(
                     label="⬇️ Tải về Kế hoạch bài dạy (Word)",
@@ -556,7 +556,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     file_name=f"GA_{ten_bai.replace(' ', '_')}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 )
-                cleaned_text = re.sub(r'\[START_GRAPHVIZ\].*?\[END_GRAPHVIZ\]', '', markdown_text, flags=re.DOTALL | re.IGNORECASE)
+                
             except Exception as e:
                 # Xử lý lỗi đặc biệt khi API Key bị lỗi (chỉ cần một dòng thông báo)
                 if "API_KEY" in str(e):
@@ -574,5 +574,6 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
 
