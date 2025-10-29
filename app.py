@@ -34,7 +34,7 @@ model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo (GIỮ NGUYÊN)
 PROMPT_GOC = """
-CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
+CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT CỨ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
 Bạn là một chuyên gia giáo dục Tiểu học hàng đầu Việt Nam, am hiểu sâu sắc Chương trình GDPT 2018 và kỹ thuật thiết kế Kế hoạch Bài Dạy (giáo án) theo Công văn 2345.
 
@@ -111,7 +111,7 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 ---
 
 **PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)**
-(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 7 `{yeu_cau_mindmap}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này.)
+(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LI LIỆU ĐẦU VÀO số 7 `{yeu_cau_mindmap}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này.)
 
 - Nếu `{yeu_cau_mindmap}` là 'CÓ':
 - **YÊU CẦU BẮT BUỘC:** Bạn PHẢI tạo một Sơ đồ tư duy (Mind Map) tóm tắt nội dung chính của bài học {ten_bai} bằng **ngôn ngữ Graphviz DOT**.
@@ -128,11 +128,11 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 `    center [label="{ten_bai}", fillcolor=lightyellow];` # Nút trung tâm
 `    center -> "Nhanh1";`
 `    "Nhanh1" [label="Nhánh Chính 1"];` # Đặt nhãn tiếng Việt
-`    "Nhanh1" -> "ND1_1" [label="Nội dung 1.1"];`
-`    "Nhanh1" -> "ND1_2" [label="Nội dung 1.2"];`
+`    "Nhanh1" -> "ND1_1" [label="Nội dung 1.1"];` # Đặt nhãn tiếng Việt
+`    "Nhanh1" -> "ND1_2" [label="Nội dung 1.2"];` # Đặt nhãn tiếng Việt
 `    center -> "Nhanh2";`
-`    "Nhanh2" [label="Nhánh Chính 2"];`
-`    "Nhanh2" -> "ND2_1" [label="Nội dung 2.1"];`
+`    "Nhanh2" [label="Nhánh Chính 2"];` # Đặt nhãn tiếng Việt
+`    "Nhanh2" -> "ND2_1" [label="Nội dung 2.1"];` # Đặt nhãn tiếng Việt
 `}}`
 `[END_GRAPHVIZ]`
 
@@ -140,10 +140,10 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 Hãy bắt đầu tạo giáo án.
 """
 # ==================================================================
-# KẾT THÚC PHẦN PROMPT MỚI
+# KẾT THÚC PHẦN PROMPT (GIỮ NGUYÊN)
 # ==================================================================
 
-# Các hàm xử lý Word (ĐÃ SỬA LỖI ** VÀ GRAPHVIZ)
+# Các hàm xử lý Word (ĐÃ SỬA CHỮA LỖI ** VÀ PHẦN VI)
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
     text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
@@ -164,6 +164,7 @@ def create_word_document(markdown_text, lesson_title):
 
     lines = markdown_text.split('\n')
     is_in_table_section = False
+    is_in_graphviz_section = False # Cờ mới để bỏ qua code Graphviz
     table = None
     current_row = None
 
@@ -171,6 +172,18 @@ def create_word_document(markdown_text, lesson_title):
         line = line.strip()
         if not line:
             continue
+            
+        # Bắt đầu và kết thúc khối Graphviz (đảm bảo bỏ qua mọi thứ bên trong)
+        # Nếu chưa gặp tiêu đề PHẦN VI, ta cần dùng cờ này để bỏ qua các dòng code Graphviz
+        # vì chúng ta sẽ chèn toàn bộ mã code sau khi gặp tiêu đề PHẦN VI.
+        if "[START_GRAPHVIZ]" in line:
+            is_in_graphviz_section = True
+            continue
+        if "[END_GRAPHVIZ]" in line:
+            is_in_graphviz_section = False
+            continue
+        if is_in_graphviz_section:
+            continue # Bỏ qua dòng code Graphviz
 
         # Kiểm tra tiêu đề bảng
         if re.match(r'\|.*Hoạt động của giáo viên.*\|.*Hoạt động của học sinh.*\|', line, re.IGNORECASE):
@@ -184,7 +197,7 @@ def create_word_document(markdown_text, lesson_title):
             hdr_cells = table.rows[0].cells
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
-            current_row = table.add_row().cells # Bắt đầu hàng nội dung đầu tiên
+            current_row = table.add_row().cells
             continue
 
         if is_in_table_section and table is not None:
@@ -194,43 +207,43 @@ def create_word_document(markdown_text, lesson_title):
             # Kiểm tra kết thúc bảng (Chuyển sang phần IV, V, VI)
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
                 is_in_table_section = False
-                if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
-                    # Nếu là tiêu đề phần mới, xử lý ở khối ngoài
-                    pass
                 continue
 
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
 
                 if len(cells_content) == 2:
-                    # Loại bỏ dấu ** trước khi đưa vào Word
+                    # Lần 1: Loại bỏ ** cho tiêu đề Hoạt động
                     gv_content = cells_content[0].strip().replace('**', '')
                     hs_content = cells_content[1].strip().replace('**', '')
 
                     ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\d+\.\sHoạt động.*)\s*', re.IGNORECASE)
                     is_main_header = ACTIVITY_HEADERS_PATTERN.match(gv_content)
-
+                    
+                    # Nếu là Tiêu đề Hoạt động (1, 2, 3, 4)
                     if is_main_header:
                         title = gv_content.strip().strip('*').strip()
-                        # Thêm hàng header mới
                         current_row = table.add_row().cells
                         current_row[0].merge(current_row[1])
                         p = current_row[0].add_paragraph(title)
                         p.runs[0].bold = True
                         current_row = table.add_row().cells # Hàng mới cho nội dung sau header
                         continue
-
+                    
+                    # Nếu là nội dung chi tiết
                     else:
                         if current_row is None:
                             current_row = table.add_row().cells
 
                         for cell_index, cell_content in enumerate([gv_content, hs_content]):
-                            content_lines = cell_content.split('\n')
+                            cell_content_cleaned = clean_content(cell_content)
+                            content_lines = cell_content_cleaned.split('\n')
+                            
                             for content_line in content_lines:
                                 content_line = content_line.strip()
                                 if not content_line: continue
-                                content_line = content_line.strip('**').strip()
-
+                                
+                                # Loại bỏ dấu * ở đầu dòng (nếu có)
                                 if content_line.startswith('*') or content_line.startswith('-'):
                                     p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
                                 else:
@@ -240,31 +253,31 @@ def create_word_document(markdown_text, lesson_title):
         # Xử lý nội dung ngoài bảng (I, II, IV, V, VI)
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
-            document.add_heading(clean_line, level=2)
-
-            # Xử lý đặc biệt cho PHẦN VI: SƠ ĐỒ TƯ DUY
+            
+            # TRỌNG TÂM SỬA LỖI: HIỆN PHẦN VI VÀ MÃ CODE
             if clean_line.startswith("PHẦN VI."):
+                 document.add_heading(clean_line, level=2) # Thêm tiêu đề Phần VI
                  # Tìm mã Graphviz và thêm vào Word dưới dạng text thường
                  graph_start = markdown_text.find("[START_GRAPHVIZ]")
                  graph_end = markdown_text.find("[END_GRAPHVIZ]")
                  if graph_start != -1 and graph_end != -1:
+                     # Cắt chuỗi mã code
                      graph_code_for_word = markdown_text[graph_start + len("[START_GRAPHVIZ]"):graph_end].strip()
 
-                     # QUYẾT ĐỊNH: Không thể chèn ảnh sơ đồ tư duy trực tiếp, chỉ chèn mã code.
-                     document.add_paragraph("\n(Lưu ý: Sơ đồ tư duy được hiển thị trực quan trên giao diện web. Phần này là **Mã nguồn Graphviz DOT** để tham khảo):\n")
+                     document.add_paragraph("\n(Mã nguồn Graphviz DOT để tham khảo. Sơ đồ trực quan được hiển thị trên giao diện web):\n")
                      # Thêm mã nguồn vào Word
                      p = document.add_paragraph(graph_code_for_word)
                      # Tạo một border (hộp) cho code để dễ nhìn
                      p.paragraph_format.left_indent = Inches(0.5)
                      p.paragraph_format.right_indent = Inches(0.5)
-
-        # Bỏ qua các dòng bên trong khối Graphviz khi xử lý cho Word
-        elif "[START_GRAPHVIZ]" in line or "[END_GRAPHVIZ]" in line:
-             continue
+                 continue # Bỏ qua dòng tiêu đề đã được xử lý
+            
+            # Tiêu đề các phần khác
+            document.add_heading(clean_line, level=2)
 
         # Các tiêu đề con (vd: 1. **Về kiến thức:**)
         elif line.startswith('**') and line.endswith('**'):
-            document.add_heading(line.strip('**'), level=3)
+            document.add_heading(line.strip('**').replace('**', ''), level=3)
 
         # Danh sách gạch đầu dòng (List Bullet)
         elif line.startswith('*') or line.startswith('-'):
@@ -305,8 +318,7 @@ uploaded_file = st.file_uploader(
 tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False)
 
 # 8. <-- MỚI: Thêm Checkbox cho Sơ đồ tư duy
-tao_mindmap = st.checkbox("8. Yêu cầu tạo Sơ đồ tư duy trực quan", value=False)
-
+tao_mindmap = st.checkbox("8. Yêu cầu tạo Sơ đồ tư duy trực quan", value=True)
 
 # Nút bấm để tạo giáo án
 if st.button("🚀 Tạo Giáo án ngay!"):
@@ -333,7 +345,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     ten_bai=ten_bai,
                     yeu_cau=yeu_cau,
                     yeu_cau_phieu=yeu_cau_phieu_value,
-                    yeu_cau_mindmap=yeu_cau_mindmap_value # <-- MỚI: Thêm biến số 7
+                    yeu_cau_mindmap=yeu_cau_mindmap_value # <-- Thêm biến số 7
                 )
 
                 # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
@@ -373,48 +385,38 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # LỌC "Cách tiến hành:" RA KHỎI PHẦN HIỂN THỊ WEB
                 cleaned_text_display = re.sub(r'Cách tiến hành[:]*\s*', '', cleaned_text, flags=re.IGNORECASE)
 
-                # --- KHỐI LOGIC HIỂN THỊ SƠ ĐỒ TƯ DUY ---
+                # --- KHỐI LOGIC HIỂN THỊ SƠ ĐỒ TƯ DUY TRÊN WEB (GIỮ NGUYÊN) ---
                 start_tag = "[START_GRAPHVIZ]"
                 end_tag = "[END_GRAPHVIZ]"
 
-                # Kiểm tra xem người dùng có yêu cầu sơ đồ VÀ AI có trả về thẻ tag không
                 if tao_mindmap and start_tag in cleaned_text_display:
                     try:
-                        # Tách phần văn bản giáo án
                         before_graph = cleaned_text_display.split(start_tag)[0]
-
-                        # Tách phần còn lại
                         temp = cleaned_text_display.split(start_tag)[1]
-
-                        # Lấy code sơ đồ tư duy (loại bỏ khoảng trắng thừa)
                         graph_code = temp.split(end_tag)[0].strip()
-
-                        # Lấy phần văn bản sau sơ đồ (nếu có)
                         after_graph = temp.split(end_tag)[1]
 
-                        # Hiển thị 3 phần
                         st.markdown(before_graph)
                         st.subheader("Sơ đồ tư duy (Mind Map) - VẼ TRỰC TIẾP:")
-                        # Kiểm tra xem code có rỗng không
                         if graph_code:
                             st.graphviz_chart(graph_code) # Vẽ sơ đồ
                         else:
                             st.warning("AI đã tạo thẻ tag nhưng mã nguồn Graphviz rỗng. Vui lòng chạy lại.")
                         st.markdown(after_graph)
 
-                    except IndexError: # Lỗi nếu không tìm thấy end_tag
+                    except IndexError:
                         st.error("Lỗi khi trích xuất mã nguồn Graphviz: Không tìm thấy thẻ đóng `[END_GRAPHVIZ]`.")
-                        st.markdown(cleaned_text_display) # Hiển thị văn bản gốc
+                        st.markdown(cleaned_text_display)
                     except Exception as e:
                         st.error(f"Lỗi khi vẽ sơ đồ tư duy: {e}")
-                        st.markdown(cleaned_text_display) # Hiển thị văn bản gốc nếu vẽ lỗi
+                        st.markdown(cleaned_text_display)
                 else:
-                    # Nếu không yêu cầu sơ đồ HOẶC không có thẻ tag, hiển thị như cũ
                     st.markdown(cleaned_text_display)
                 # --- KẾT THÚC KHỐI LOGIC SƠ ĐỒ TƯ DUY ---
 
 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
+                # Hàm create_word_document đã được sửa để loại bỏ ** và hiện Phần VI (code)
                 word_bytes = create_word_document(cleaned_text, ten_bai)
 
 
