@@ -14,7 +14,6 @@ import google.generativeai as genai
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    # Dùng API Key giả cho môi trường giả lập, bạn cần thay bằng API Key thật
     API_KEY = "FAKE_API_KEY_FOR_DEMO" 
 
 genai.configure(api_key=API_KEY)
@@ -151,11 +150,12 @@ def create_word_document(markdown_text, lesson_title):
     table = None
     
     # --------------------------------------------------------------------------------
-    # 1. TÁCH VÀ LƯU MÃ GRAPHVIZ (Bảo toàn mã code để trích xuất Outline)
+    # 1. LƯU MÃ GRAPHVIZ RIÊNG ĐỂ XỬ LÝ
     # --------------------------------------------------------------------------------
     graph_code_content = ""
     parsing_graph = False
     
+    # Tách mã Graphviz ra khỏi nội dung
     for line in lines:
         if "[START_GRAPHVIZ]" in line:
             parsing_graph = True
@@ -167,28 +167,42 @@ def create_word_document(markdown_text, lesson_title):
             graph_code_content += line + "\n"
     # --------------------------------------------------------------------------------
 
+    
+    # BƯỚC SỬA LỖI TRIỆT ĐỂ: TẠO BẢN TEXT ĐÃ LÀM SẠCH GRAPHVIZ
+    overall_clean_lines = []
+    
+    # Dùng regex để tìm và thay thế PHẦN VI thành tiêu đề mong muốn
+    # Lọc bỏ toàn bộ nội dung trong thẻ GRAPHVIZ
+    
+    is_in_graphviz_block = False
+    for line in lines:
+        if "[START_GRAPHVIZ]" in line:
+            is_in_graphviz_block = True
+            continue
+        if "[END_GRAPHVIZ]" in line:
+            is_in_graphviz_block = False
+            continue
+            
+        if is_in_graphviz_block:
+            continue # Bỏ qua tất cả các dòng code Graphviz
+
+        # Thay thế tiêu đề PHẦN VI gốc bằng tiêu đề Outline
+        if line.strip().startswith("PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)"):
+             overall_clean_lines.append("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY")
+        else:
+             overall_clean_lines.append(line)
+
+    
+    
     current_row = None
     
-    # Lặp qua toàn bộ nội dung gốc để tạo Word document
-    for line in lines: 
+    for line in overall_clean_lines: # Dùng bản đã làm sạch
         line = line.strip()
         if not line:
             continue
             
-        # *******************************************************************
-        # BƯỚC ĐỘT PHÁ: NGỪNG XỬ LÝ NỘI DUNG TỪ ĐÂY KHI GẶP PHẦN VI
-        # Logic này đảm bảo mã Graphviz (code thô) không bao giờ được thêm vào.
-        # *******************************************************************
-        if line.startswith("---") or re.match(r'^PHẦN\s[IVX]+\.', line):
-            is_in_table_section = False
-        
-        if line.startswith("PHẦN VI."):
-             break # Dừng vòng lặp chính tại đây
-        
-        # *******************************************************************
-        
         # --------------------------------------------------------------------------------
-        # XỬ LÝ BẢNG CHÍNH (HOẠT ĐỘNG) - PHẦN III
+        # XỬ LÝ BẢNG CHÍNH (HOẠT ĐỘNG)
         # --------------------------------------------------------------------------------
         if re.match(r'\|.*Hoạt động của giáo viên.*\|.*Hoạt động của học sinh.*\|', line, re.IGNORECASE):
             is_in_table_section = True
@@ -206,6 +220,11 @@ def create_word_document(markdown_text, lesson_title):
 
         if is_in_table_section and table is not None:
             if line.startswith('| :---'):
+                continue
+
+            # Kiểm tra kết thúc bảng
+            if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
+                is_in_table_section = False
                 continue
 
             if line.startswith('|') and len(line.split('|')) >= 3:
@@ -244,13 +263,59 @@ def create_word_document(markdown_text, lesson_title):
                                 else:
                                     current_row[cell_index].add_paragraph(content_line)
                     continue
-            current_row = table.add_row().cells
+            current_row = table.add_row().cells # Thêm dòng mới sau khi xử lý xong một cặp nội dung
             
         # --------------------------------------------------------------------------------
-        # XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V)
+        # XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V, VI)
         # --------------------------------------------------------------------------------
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
+            
+            # XỬ LÝ PHẦN VI: GỢI Ý SƠ ĐỒ TƯ DUY
+            if clean_line.startswith("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY"):
+                 document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
+                 
+                 if graph_code_content.strip():
+                     # Regex để tìm tất cả các nhãn (label)
+                     labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
+                     
+                     # Lọc bỏ các label rỗng và trùng lặp
+                     unique_labels = sorted(list(set(label.strip() for label in labels if label.strip())))
+
+                     if unique_labels:
+                         document.add_paragraph("(Dưới đây là gợi ý nội dung chính (Key Ideas) được trích xuất từ sơ đồ tư duy do AI tạo. Giáo viên có thể dựa vào đây để vẽ hoặc chèn hình ảnh sơ đồ từ giao diện web.)")
+                         document.add_paragraph() 
+
+                         for label in unique_labels:
+                             # Lấy nhãn, thay thế \n bằng dấu gạch đầu dòng thứ cấp
+                             processed_label = label.replace(r'\n', '\n')
+                             label_parts = processed_label.split('\n')
+                             
+                             main_label = label_parts[0].strip().replace('**', '') 
+                             
+                             if not main_label or len(main_label) < 5: 
+                                 continue
+                             
+                             # Nhãn chính (main bullet)
+                             p = document.add_paragraph(f"• {main_label}", style='List Bullet')
+                                     
+                             # Thêm các dòng phụ (sub bullet)
+                             for part in label_parts[1:]:
+                                 part = part.strip().replace('**', '') 
+                                 if part and len(part) > 3: 
+                                     p = document.add_paragraph(f"  - {part}")
+                                     p.style = 'List Continue 2' 
+                                     p.paragraph_format.left_indent = Inches(0.5)
+
+                     else:
+                         document.add_paragraph("(AI đã tạo Graphviz nhưng không tìm thấy nhãn nội dung (label) để trích xuất gợi ý. Vui lòng kiểm tra lại yêu cầu.)")
+                     
+                 else:
+                     document.add_paragraph("(Không tìm thấy mã nguồn Graphviz. Có thể yêu cầu tạo sơ đồ tư duy là 'KHÔNG'.)")
+                 
+                 continue 
+            
+            # Tiêu đề các phần khác
             document.add_heading(clean_line, level=2)
 
         # Các tiêu đề con (vd: 1. **Về kiến thức:**)
@@ -265,66 +330,6 @@ def create_word_document(markdown_text, lesson_title):
             document.add_paragraph(line.replace('**', ''))
 
 
-    # *******************************************************************
-    # 2. XỬ LÝ PHẦN VI (MANUAL INJECTION) - Đảm bảo tiêu đề và nội dung đúng
-    # *******************************************************************
-    document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
-                 
-    if graph_code_content.strip():
-        # Regex để tìm tất cả các nhãn (label)
-        labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
-        
-        # Lọc bỏ các label rỗng và trùng lặp
-        unique_labels = sorted(list(set(label.strip() for label in labels if label.strip())))
-
-        if unique_labels:
-            document.add_paragraph("(Dưới đây là gợi ý nội dung chính (Key Ideas) được trích xuất từ sơ đồ tư duy do AI tạo. Giáo viên có thể dựa vào đây để vẽ hoặc chèn hình ảnh sơ đồ từ giao diện web.)")
-            document.add_paragraph() 
-
-            # Lấy tiêu đề chính (thường là label của nút center)
-            center_label = next((label for label in unique_labels if lesson_title.upper() in label.upper() and len(label) > 10), None)
-            
-            # 1. Thêm nhãn trung tâm (Nếu tìm thấy)
-            if center_label:
-                # Nhãn trung tâm (In đậm, Gạch đầu dòng cấp 1)
-                p = document.add_paragraph(f"• **{center_label.replace('**', '').strip()}**", style='List Bullet')
-                if center_label in unique_labels:
-                    unique_labels.remove(center_label)
-            
-            # 2. Thêm các nhánh chính và nhánh phụ
-            for label in unique_labels:
-                # Lọc bỏ các label quá ngắn hoặc là tên biến (ví dụ: 'center', 'Nhanh1')
-                if len(label) < 10 and not any(c.isalpha() for c in label) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung"]:
-                    continue
-
-                processed_label = label.replace(r'\n', '\n')
-                label_parts = processed_label.split('\n')
-                
-                main_label = label_parts[0].strip().replace('**', '') 
-                
-                if not main_label or len(main_label) < 5: 
-                    continue
-                
-                # Nhãn chính (main branch) - Gạch đầu dòng cấp 2 (Indent 1)
-                p = document.add_paragraph(f"  - {main_label}", style='List Continue')
-                p.paragraph_format.left_indent = Inches(0.25)
-                        
-                # Thêm các dòng phụ (sub branch) - Gạch đầu dòng cấp 3 (Indent 2)
-                for part in label_parts[1:]:
-                    part = part.strip().replace('**', '') 
-                    if part and len(part) > 3: 
-                        p = document.add_paragraph(f"    - {part}")
-                        p.style = 'List Continue 2' 
-                        p.paragraph_format.left_indent = Inches(0.5)
-
-        else:
-            document.add_paragraph("(AI đã tạo Graphviz nhưng không tìm thấy nhãn nội dung (label) để trích xuất gợi ý. Vui lòng kiểm tra lại yêu cầu.)")
-        
-    else:
-        document.add_paragraph("(Không tìm thấy mã nguồn Graphviz. Có thể yêu cầu tạo sơ đồ tư duy là 'KHÔNG' hoặc AI đã không tạo ra nội dung Graphviz hợp lệ.)")
-    
-    # *******************************************************************
-    
     bio = BytesIO()
     document.save(bio)
     bio.seek(0)
@@ -385,7 +390,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     ten_bai=ten_bai,
                     yeu_cau=yeu_cau,
                     yeu_cau_phieu=yeu_cau_phieu_value,
-                    yeu_cau_mindmap=yeu_cau_mindmap_value
+                    yeu_cau_mindmap=yeu_cau_mindmap_value # <-- Thêm biến số 7
                 )
 
                 # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
