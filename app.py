@@ -21,12 +21,8 @@ from PIL import Image # Thư viện xử lý ảnh Pillow
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    # Không cần dòng này khi chạy thực tế, chỉ dùng cho hướng dẫn
-    # st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
-    # st.stop() # Dừng ứng dụng
-    # Thay thế bằng API Key giả để code chạy qua (chỉ trong môi trường giả lập này)
+    # Dùng API Key giả cho môi trường giả lập, bạn cần thay bằng API Key thật
     API_KEY = "FAKE_API_KEY_FOR_DEMO" 
-
 
 # Cấu hình API key cho thư viện Gemini (Chỉ truyền API Key để tránh lỗi)
 genai.configure(api_key=API_KEY)
@@ -168,7 +164,6 @@ def create_word_document(markdown_text, lesson_title):
 
     lines = markdown_text.split('\n')
     is_in_table_section = False
-    is_in_graphviz_section = False
     table = None
     current_row = None
     
@@ -274,12 +269,11 @@ def create_word_document(markdown_text, lesson_title):
             
             # XỬ LÝ PHẦN VI: TẠO GỢI Ý OUTLINE TỪ MÃ GRAPHVIZ ĐÃ LƯU
             if clean_line.startswith("PHẦN VI."):
+                 # ĐẢM BẢO TIÊU ĐỀ LUÔN CHÍNH XÁC
                  document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
                  
                  if graph_code_content.strip():
                      # Regex để tìm tất cả các nhãn (label)
-                     # re.DOTALL để khớp với các nhãn có xuống dòng (\n)
-                     # Lọc bỏ các ký tự đặc biệt như **
                      labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
                      
                      # Lọc bỏ các label rỗng và trùng lặp
@@ -296,15 +290,11 @@ def create_word_document(markdown_text, lesson_title):
                              
                              main_label = label_parts[0].strip().replace('**', '') 
                              
-                             # Bỏ qua nhãn rỗng hoặc chỉ là dấu chấm phẩy
-                             if not main_label or main_label == ';': 
+                             if not main_label or len(main_label) < 5: 
                                  continue
                              
-                             # Lọc các nhãn thường là tiêu đề chung (như Tự chủ, Hợp tác, Kiến thức...)
-                             if len(main_label) > 10: 
-                                 # Nhãn chính (main bullet)
-                                 p = document.add_paragraph(f"• {main_label}", style='List Bullet')
-                                 # p.paragraph_format.left_indent = Inches(0.25) # Đã có trong style List Bullet
+                             # Nhãn chính (main bullet)
+                             p = document.add_paragraph(f"• {main_label}", style='List Bullet')
                                      
                              # Thêm các dòng phụ (sub bullet)
                              for part in label_parts[1:]:
