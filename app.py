@@ -412,7 +412,7 @@ def create_word_document(markdown_text, lesson_title):
 # -----------------------------------------------------------------
 
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
-st.title("🤖 Trợ lý Soạn Kế hoạch bài dạy Tiểu học")
+st.title("Trợ lý Soạn Kế hoạch bài dạy Tiểu học")
 st.write("Sản phẩm của thầy giáo Hoàng Trọng Nghĩa.")
 st.markdown("*(Kế hoạch bài dạy được biên soạn theo chuẩn Chương trình GDPT 2018)*")
 
@@ -574,4 +574,5 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
+
 
