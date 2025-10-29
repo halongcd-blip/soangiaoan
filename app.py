@@ -30,8 +30,8 @@ genai.configure(api_key=API_KEY)
 # -----------------------------------------------------------------
 # SỬA LỖI 404 TẠI ĐÂY
 # -----------------------------------------------------------------
-# Sửa model_name từ "gemini-1.5-flash" thành "gemini-1.5-flash-latest"
-model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest") 
+# Chuyển sang model "gemini-pro-vision" (ổn định nhất cho ảnh + text)
+model = genai.GenerativeModel(model_name="gemini-pro-vision") 
 # -----------------------------------------------------------------
 
 
@@ -262,10 +262,13 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
                 # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
                 if uploaded_file is not None:
-                    # Mở ảnh bằng thư viện Pillow
+                    # Xử lý PDF (nếu có)
+                    if uploaded_file.type == "application/pdf":
+                        st.error("Lỗi: Tính năng tải lên file PDF chưa được hỗ trợ. Vui lòng tải file ảnh (PNG, JPG).")
+                        st.stop() # Dừng thực thi nếu là PDF
+                    
+                    # Xử lý ảnh
                     image = Image.open(uploaded_file)
-                    # Thêm ảnh vào danh sách nội dung
-                    # Quan trọng: Đặt ảnh LÊN TRƯỚC prompt
                     content.append(image) 
 
                 # 4. Thêm Prompt vào danh sách Content (luôn luôn có)
@@ -274,7 +277,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # 5. Gọi AI với danh sách nội dung (content)
                 response = model.generate_content(content)
                 
-                # 6. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
+                # 6. Hiển thị kết quả
                 st.balloons() 
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
                 
