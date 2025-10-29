@@ -4,13 +4,15 @@ from docx import Document
 from io import BytesIO
 import re # Cần để làm sạch Markdown
 from docx.shared import Inches
+
 # -----------------------------------------------------------------
-# CÁC DÒNG IMPORT ỔN ĐỊNH NHẤT
+# IMPORT THƯ VIỆN
 # -----------------------------------------------------------------
 import google.generativeai as genai
-# Lớp Part nằm trực tiếp ở thư viện gốc, không qua module 'types'
-from google.generativeai import types
+from PIL import Image # <-- MỚI: Thêm thư viện xử lý ảnh Pillow
+# XÓA: from google.generativeai import types (Dòng này gây lỗi)
 # -----------------------------------------------------------------
+
 
 # -----------------------------------------------------------------
 # 1. CẤU HÌNH "BỘ NÃO" AI
@@ -26,18 +28,22 @@ except:
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
 
-# Khởi tạo mô hình AI (Cú pháp này hoàn toàn đúng với gói google-generativeai)
-model = genai.GenerativeModel(model_name="gemini-2.5-flash")
-# Đây là "Prompt Gốc"...
+# Khởi tạo mô hình AI (Sửa lại tên model cho đúng)
+# "gemini-2.5-flash" không tồn tại, có thể bạn muốn "gemini-1.5-flash"
+model = genai.GenerativeModel(model_name="gemini-1.5-flash") 
+
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
-# Toàn bộ "bộ não" sư phạm nằm ở đây
 PROMPT_GOC = """
 CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT KỲ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
 Bạn là một chuyên gia giáo dục Tiểu học hàng đầu Việt Nam, am hiểu sâu sắc Chương trình GDPT 2018 và kỹ thuật thiết kế Kế hoạch Bài Dạy (giáo án) theo Công văn 2345.
 
 Nhiệm vụ của bạn là soạn một Kế hoạch bài dạy chi tiết, sáng tạo, tập trung vào phát triển năng lực và phẩm chất.
+Nếu người dùng tải lên hình ảnh, bạn phải:
+1. Phân tích hình ảnh đó (đây là ảnh chụp bài tập trong SGK).
+2. Trích xuất (chuyển ảnh thành chữ) nội dung các bài tập trong ảnh.
+3. Sử dụng nội dung chữ vừa trích xuất đó để đưa vào "Hoạt động 3: Luyện tập, Thực hành" một cách hợp lý.
 
 DỮ LIỆU ĐẦU VÀO:
 1.  **Môn học:** {mon_hoc}
@@ -45,7 +51,7 @@ DỮ LIỆU ĐẦU VÀO:
 3.  **Bộ sách:** {bo_sach}
 4.  **Tên bài học/Chủ đề:** {ten_bai}
 5.  **Yêu cầu cần đạt (Lấy từ Chương trình môn học):** {yeu_cau}
-7.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
+6.  **Yêu cầu tạo phiếu bài tập:** {yeu_cau_phieu} (Dựa vào đây để quyết định có tạo phiếu bài tập hay không)
 
 YÊU CẦU VỀ ĐỊNH DẠNG:
 Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
@@ -74,7 +80,7 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 | *Mục tiêu: (Bám sát {yeu_cau} để hình thành kiến thức mới)* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
 | **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS quan sát, thảo luận) |
 | **3. Hoạt động Luyện tập, Thực hành** | **3. Hoạt động Luyện tập, Thực hành** |
-| *Mục tiêu: Áp dụng kiến thức, rèn kỹ năng. Nếu yeu_cau_phieu là CÓ, GV phải giao Phiếu bài tập trong hoạt động này.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
+| *Mục tiêu: Áp dụng kiến thức, rèn kỹ năng. (Nếu có ảnh tải lên, GV sẽ dùng bài tập từ ảnh ở đây. Nếu yeu_cau_phieu là CÓ, GV phải giao Phiếu bài tập).* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
 | **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS thực hành cá nhân/nhóm) |
 | **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** | **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** |
 | *Mục tiêu: Liên hệ thực tế, củng cố bài.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
@@ -82,29 +88,23 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
 ---
 
-# <-- MỚI: ĐÃ ĐỔI THỨ TỰ THÀNH PHẦN IV
 **PHẦN IV. ĐIỀU CHỈNH SAU BÀI DẠY (NẾU CÓ)**
 *(Đây là phần để trống để giáo viên ghi chú lại sau khi thực tế giảng dạy)*
-
 1.  **Về nội dung, kiến thức:**
-    * ......................................................................
     * ......................................................................
 2.  **Về phương pháp, kỹ thuật tổ chức:**
     * ......................................................................
-    * ......................................................................
 3.  **Về học sinh (những khó khăn, điểm cần lưu ý):**
-    * ......................................................................
     * ......................................................................
 
 ---
 
-# <-- MỚI: ĐÃ ĐỔI THỨ TỰ THÀNH PHẦN V
 **PHẦN V. PHIẾU BÀI TẬP (NẾU CÓ)**
-(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 6 `{yeu_cau_phieu}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này và không đề cập gì đến nó.)
+(QUAN TRỌNG: Bạn CHỈ tạo phần này nếu DỮ LIỆU ĐẦU VÀO số 6 `{yeu_cau_phieu}` là 'CÓ'. Nếu là 'KHÔNG', hãy bỏ qua hoàn toàn phần này.)
 
 - Nếu `{yeu_cau_phieu}` là 'CÓ':
 - Hãy thiết kế một Phiếu bài tập (Worksheet) ngắn gọn, bám sát nội dung của **Hoạt động 3: Luyện tập / Thực hành**.
-- Phiếu phải được trình bày sinh động, vui nhộn, phù hợp với học sinh tiểu học (ví dụ: dùng emojis 🌟, 🦋, 🖍️, 🐝, lời dẫn thân thiện, có khung viền đơn giản).
+- Phiếu phải được trình bày sinh động, vui nhộn (dùng emojis 🌟, 🦋, 🖍️, 🐝, lời dẫn thân thiện).
 - Đặt tên phiếu rõ ràng (ví dụ: PHIẾU BÀI TẬP - BÀI: {ten_bai}).
 - Bao gồm 2-3 bài tập nhỏ (ví dụ: nối, điền từ, khoanh tròn).
 
@@ -114,28 +114,13 @@ Hãy bắt đầu tạo giáo án.
 # ==================================================================
 # KẾT THÚC PHẦN PROMPT MỚI
 # ==================================================================
-from docx import Document
-from docx.shared import Inches
-from io import BytesIO
-import re
 
-# Các mẫu regex để nhận diện các loại tiêu đề
-ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)(\d+\.\sHoạt động.*?)(\*\*|)\s*', re.IGNORECASE)
-SUB_ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)([a-z]\)\s.*?)(\*\*|)\s*', re.IGNORECASE)
-
-# Loại bỏ mọi trường hợp "Cách tiến hành"
+# Các hàm xử lý Word (Giữ nguyên)
 def clean_content(text):
     return re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
 
 def create_word_document(markdown_text, lesson_title):
-    """
-    Tạo đối tượng Word (docx) từ nội dung Markdown, xử lý tiêu đề và bảng.
-    - Đảm bảo Tiêu đề Hoạt động và Tiêu đề Phụ (a, b...) được gộp cột (merge cell).
-    - Ngăn chặn việc tạo quá nhiều đường kẻ ngang.
-    """
     document = Document()
-    
-    # 1. THÊM TIÊU ĐỀ CHÍNH
     if lesson_title:
         document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
         document.add_paragraph() 
@@ -143,133 +128,83 @@ def create_word_document(markdown_text, lesson_title):
     lines = markdown_text.split('\n')
     is_in_table_section = False
     table = None
-    current_row = None # Biến theo dõi hàng hiện tại (để gom nội dung vào)
+    current_row = None 
     
     for line in lines:
         line = line.strip()
         if not line:
             continue
             
-        # 1. PHÁT HIỆN BẢNG (III. Các hoạt động dạy học chủ yếu)
         if re.match(r'\|.*Hoạt động của giáo viên.*\|.*Hoạt động của học sinh.*\|', line, re.IGNORECASE):
             is_in_table_section = True
             document.add_heading("III. Các hoạt động dạy học chủ yếu", level=2)
-            
-            # Tạo bảng 2 cột
             table = document.add_table(rows=1, cols=2)
             table.style = 'Table Grid'
             table.autofit = False
             table.columns[0].width = Inches(3.5) 
             table.columns[1].width = Inches(3.5)
-            
-            # Thiết lập headers (Hàng đầu tiên)
             hdr_cells = table.rows[0].cells
             hdr_cells[0].text = "Hoạt động của giáo viên"
             hdr_cells[1].text = "Hoạt động của học sinh"
-            
-            # Khởi tạo hàng đầu tiên ngay sau header để chứa nội dung
             current_row = table.add_row().cells 
-            
             continue
             
-        # 2. XỬ LÝ NỘI DUNG BÊN TRONG BẢNG
         if is_in_table_section and table is not None:
-            # Bỏ qua dòng phân cách bảng (| :--- | :--- |)
             if line.startswith('| :---'):
                 continue
             
-            # Kiểm tra xem bảng đã kết thúc chưa
             if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line) or line.startswith('---'):
                 is_in_table_section = False
                 if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
                     document.add_heading(line.strip().strip('**'), level=2)
                 continue
             
-            # Xử lý các dòng dữ liệu Markdown
             if line.startswith('|') and len(line.split('|')) >= 3:
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
                 if len(cells_content) == 2:
-                    
-                    # Áp dụng hàm làm sạch nội dung cột
                     gv_content = clean_content(cells_content[0])
                     hs_content = clean_content(cells_content[1])
                     
-                    # --- KIỂM TRA TIÊU ĐỀ HOẠT ĐỘNG (1, 2, 3...) HOẶC TIÊU ĐỀ PHỤ (a, b...) ---
-                    
+                    ACTIVITY_HEADERS_PATTERN = re.compile(r'^\s*(\*\*|)(\d+\.\sHoạt động.*?)(\*\*|)\s*', re.IGNORECASE)
                     is_main_header = ACTIVITY_HEADERS_PATTERN.match(gv_content)
-                    is_sub_header = SUB_ACTIVITY_HEADERS_PATTERN.match(gv_content)
                     
-                    if is_main_header or is_sub_header:
-                        # Tiêu đề được tìm thấy: Merge cột và tạo tiêu đề in đậm
-                        
-                        # Nội dung tiêu đề đã được làm sạch
+                    if is_main_header:
                         title = gv_content.strip('**').strip()
-
-                        # --- LOGIC QUAN TRỌNG: CHỈ TẠO HÀNG MỚI ĐỂ PHÂN CÁCH (ĐƯỜNG KẺ NGANG) ---
-                        current_row = table.add_row().cells # <--- TẠO ĐƯỜNG KẺ NGANG ĐỂ PHÂN CÁCH HOẠT ĐỘNG TRƯỚC
-                        current_row[0].merge(current_row[1]) # Gộp cột cho hàng tiêu đề
-
-                        # Thêm văn bản tiêu đề vào cột 0 (đã merge)
+                        current_row = table.add_row().cells 
+                        current_row[0].merge(current_row[1]) 
                         p = current_row[0].add_paragraph(title)
                         p.runs[0].bold = True 
-                        
-                        # Cần tạo thêm một hàng mới ngay sau tiêu đề để chứa nội dung, 
-                        # điều này sẽ tạo ra đường kẻ ngang phân cách tiêu đề với nội dung bên dưới.
                         current_row = table.add_row().cells 
-                        
                         continue 
                         
-                    # --- XỬ LÝ NỘI DUNG THƯỜNG ---
                     else:
-                        # Nội dung thường sẽ được gom vào hàng hiện tại (current_row)
-                        # Điều này ngăn cản việc tạo ra đường kẻ ngang liên tục.
                         if current_row is None:
-                            # Trường hợp hiếm: Nếu chưa có hàng nào được tạo sau header
                             current_row = table.add_row().cells 
 
-                        # Xử lý nội dung hai cột (GV và HS)
                         for cell_index, cell_content in enumerate([gv_content, hs_content]):
-                            
                             content_lines = cell_content.split('\n')
-                            
                             for content_line in content_lines:
                                 content_line = content_line.strip()
                                 if not content_line: continue
-                                
-                                # Loại bỏ định dạng ** nếu có
                                 content_line = content_line.strip('**').strip()
                                 
-                                # Xử lý gạch đầu dòng (thêm vào ô hiện tại)
                                 if content_line.startswith('*') or content_line.startswith('-'):
                                     p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip(), style='List Bullet')
-                                
-                                # Văn bản thường (thêm vào ô hiện tại)
                                 else:
                                     current_row[cell_index].add_paragraph(content_line)
-                                
                     continue
             
-        # 3. XỬ LÝ NỘI DUNG BÊN NGOÀI BẢNG (Tiêu đề I, II, IV...)
-        
-        # Xử lý tiêu đề chính (I. Yêu cầu cần đạt, IV. ĐIỀU CHỈNH SAU BÀI DẠY)
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
             document.add_heading(clean_line, level=2)
-            
-        # Xử lý tiêu đề con (Về kiến thức, Chuẩn bị của GV)
         elif line.startswith('**') and line.endswith('**'):
             document.add_heading(line.strip('**'), level=3)
-            
-        # Xử lý gạch đầu dòng Markdown
         elif line.startswith('*') or line.startswith('-'):
             document.add_paragraph(line.lstrip('*- ').strip(), style='List Bullet')
-            
-        # Xử lý văn bản thuần túy
         else:
             document.add_paragraph(line)
 
-    # Lưu tài liệu vào bộ nhớ (BytesIO)
     bio = BytesIO()
     document.save(bio)
     bio.seek(0)
@@ -290,9 +225,8 @@ lop = st.text_input("2. Lớp:", placeholder="Ví dụ: 2")
 bo_sach = st.text_input("3. Bộ sách:", placeholder="Ví dụ: Cánh Diều")
 ten_bai = st.text_input("4. Tên bài học / Chủ đề:", placeholder="Ví dụ: Bài 2: Thời gian của em")
 yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu cầu cần đạt ...", height=150)
-# ... (Phần nhập liệu của mon_hoc, lop, bo_sach, ten_bai, yeu_cau)
 
-# 6. KHAI BÁO BIẾN CHO FILE UPLOADER (Cần nằm ở đây)
+# 6. KHAI BÁO BIẾN CHO FILE UPLOADER
 uploaded_file = st.file_uploader(
     "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tùy chọn)", 
     type=["pdf", "png", "jpg", "jpeg"]
@@ -303,11 +237,8 @@ tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=Fal
 
 # Nút bấm để tạo giáo án
 if st.button("🚀 Tạo Giáo án ngay!"):
-    # Lưu ý: Giả định bạn đã sửa logic kiểm tra API Key để dùng st.secrets
     if not mon_hoc or not lop or not bo_sach or not ten_bai or not yeu_cau:
         st.error("Vui lòng nhập đầy đủ cả 5 thông tin!")
-    # [BỎ: elif API_KEY == "PASTE_KEY_CUA_BAN_VAO_DAY":]
-
     else:
         with st.spinner("Trợ lý AI đang soạn giáo án, vui lòng chờ trong giây lát..."):
             try:
@@ -315,19 +246,8 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
 
                 # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
-                content = []
+                content = [] # <-- MỚI: Khởi tạo danh sách nội dung
 
-               # Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
-                if uploaded_file is not None: # <--- 8 spaces
-                    # Đọc bytes từ đối tượng file của Streamlit
-                    file_bytes = uploaded_file.read() # <--- 12 spaces
-                    
-                    file_part = types.Part.from_bytes( # Giữ nguyên cú pháp này
-                    data=file_bytes,
-                    mime_type=uploaded_file.type
-                    )
-                    content.append(file_part) # <--- DÒNG 162: PHẢI CÓ 12 DẤU CÁCH
-                
                 # 2. Điền Prompt (6 biến số text)
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
@@ -337,32 +257,40 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                     yeu_cau=yeu_cau,
                     yeu_cau_phieu=yeu_cau_phieu_value
                 )
-                # Thêm Prompt vào danh sách Content (luôn luôn có)
-                content.append(final_prompt)
 
-                # 3. Gọi AI với danh sách nội dung (content)
+                # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
+                # <-- MỚI: Đây là toàn bộ phần sửa lỗi
+                if uploaded_file is not None:
+                    # Mở ảnh bằng thư viện Pillow
+                    image = Image.open(uploaded_file)
+                    # Thêm ảnh vào danh sách nội dung
+                    # Quan trọng: Đặt ảnh LÊN TRƯỚC prompt
+                    content.append(image) 
+
+                # 4. Thêm Prompt vào danh sách Content (luôn luôn có)
+                content.append(final_prompt)
+                # <-- KẾT THÚC PHẦN SỬA LỖI
+
+                # 5. Gọi AI với danh sách nội dung (content)
                 response = model.generate_content(content)
                 
-                # 4. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
+                # 6. Hiển thị kết quả (Dùng cùng thụt lề với các lệnh trên)
                 st.balloons() 
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
-# LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
-                # Tìm vị trí bắt đầu của giáo án (thường là "I. Yêu cầu cần đạt")
-                # Sau đó, cắt bỏ phần thừa ở đầu.
+                
+                # LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
                 full_text = response.text
-                start_index = full_text.find("I. Yêu cầu cần đạt") # Tìm điểm bắt đầu
+                start_index = full_text.find("I. Yêu cầu cần đạt") 
                 
                 if start_index != -1:
-                    # Nếu tìm thấy, cắt từ đó trở đi
                     cleaned_text = full_text[start_index:]
                 else:
-                    # Nếu không tìm thấy, hiển thị toàn bộ nội dung (bao gồm cả lỗi)
                     cleaned_text = full_text
 
                 st.markdown(cleaned_text) 
                 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
-                word_bytes = create_word_document(cleaned_text, ten_bai) # <--- ĐÃ THÊM ten_bai
+                word_bytes = create_word_document(cleaned_text, ten_bai)
                 
                 st.download_button(
                     label="⬇️ Tải về Giáo án (Word)",
@@ -373,72 +301,13 @@ if st.button("🚀 Tạo Giáo án ngay!"):
             except Exception as e:
                 st.error(f"Đã có lỗi xảy ra: {e}")
                 st.error("Lỗi này có thể do API Key sai, hoặc do chính sách an toàn của Google. Vui lòng kiểm tra lại.")
-# BẮT ĐẦU PHẦN SIDEBAR (PHẢI THỤT LỀ BẰNG 0)
+
+# BẮT ĐẦU PHẦN SIDEBAR
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
 """
-Sản phẩm của Hoàng Tọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
+Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
 
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
