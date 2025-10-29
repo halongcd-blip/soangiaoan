@@ -172,10 +172,7 @@ def create_word_document(markdown_text, lesson_title):
         line = line.strip()
         if not line:
             continue
-                # 🔹 Bỏ dòng tiêu đề "PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)" nếu AI vẫn sinh ra
-    if re.match(r'PHẦN\s*VI\.\s*SƠ\s*ĐỒ\s*TƯ\s*DUY', line, re.IGNORECASE):
-        continue
-
+            
         # *******************************************************************
         # BƯỚC 1: XỬ LÝ PHẦN VI (LOẠI BỎ CODE THÔ VÀ TIÊU ĐỀ THỪA)
         # *******************************************************************
@@ -574,4 +571,3 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-
