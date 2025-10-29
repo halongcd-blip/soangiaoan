@@ -9,8 +9,7 @@ from docx.shared import Inches
 # IMPORT THƯ VIỆN
 # -----------------------------------------------------------------
 import google.generativeai as genai
-from PIL import Image # <-- MỚI: Thêm thư viện xử lý ảnh Pillow
-# XÓA: from google.generativeai import types (Dòng này gây lỗi)
+from PIL import Image # Thư viện xử lý ảnh Pillow
 # -----------------------------------------------------------------
 
 
@@ -28,9 +27,12 @@ except:
 # Cấu hình API key cho thư viện Gemini
 genai.configure(api_key=API_KEY)
 
-# Khởi tạo mô hình AI (Sửa lại tên model cho đúng)
-# "gemini-2.5-flash" không tồn tại, có thể bạn muốn "gemini-1.5-flash"
-model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
+# -----------------------------------------------------------------
+# SỬA LỖI 404 TẠI ĐÂY
+# -----------------------------------------------------------------
+# Sửa model_name từ "gemini-1.5-flash" thành "gemini-1.5-flash-latest"
+model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest") 
+# -----------------------------------------------------------------
 
 
 # Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo
@@ -246,7 +248,7 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
 
                 # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
-                content = [] # <-- MỚI: Khởi tạo danh sách nội dung
+                content = [] 
 
                 # 2. Điền Prompt (6 biến số text)
                 final_prompt = PROMPT_GOC.format(
@@ -259,7 +261,6 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 )
 
                 # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
-                # <-- MỚI: Đây là toàn bộ phần sửa lỗi
                 if uploaded_file is not None:
                     # Mở ảnh bằng thư viện Pillow
                     image = Image.open(uploaded_file)
@@ -269,7 +270,6 @@ if st.button("🚀 Tạo Giáo án ngay!"):
 
                 # 4. Thêm Prompt vào danh sách Content (luôn luôn có)
                 content.append(final_prompt)
-                # <-- KẾT THÚC PHẦN SỬA LỖI
 
                 # 5. Gọi AI với danh sách nội dung (content)
                 response = model.generate_content(content)
@@ -311,4 +311,3 @@ Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tha
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-
