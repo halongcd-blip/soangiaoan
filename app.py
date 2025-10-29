@@ -104,6 +104,7 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 - Nếu `{yeu_cau_mindmap}` là 'CÓ':
 - **YÊU CẦU BẮT BUỘC:** Bạn PHẢI tạo một Sơ đồ tư duy (Mind Map) tóm tắt nội dung chính của bài học {ten_bai} bằng **ngôn ngữ Graphviz DOT**.
 - **TUYỆT ĐỐI KHÔNG SỬ DỤNG:** Markdown, gạch đầu dòng, hay bất kỳ định dạng nào khác ngoài mã Graphviz DOT thuần túy trong phần này.
+- **TUYỆT ĐỐI KHÔNG TẠO TIÊU ĐỀ "PHẦN VI." HAY BẤT CỨ DÒNG VĂN BẢN NÀO TRƯỚC THẺ START_GRAPHVIZ**.
 - Sơ đồ phải rõ ràng, phân cấp, sử dụng tiếng Việt có dấu trong các nhãn (label). Sử dụng `layout=twopi` hoặc `layout=neato` để có bố cục tỏa tròn đẹp mắt.
 - **QUAN TRỌNG:** Bọc toàn bộ mã code Graphviz DOT trong 2 thẻ **DUY NHẤT**: `[START_GRAPHVIZ]` ở dòng đầu tiên và `[END_GRAPHVIZ]` ở dòng cuối cùng của mã nguồn. Không thêm bất kỳ văn bản nào khác bên ngoài hai thẻ này trong phần VI.
 
@@ -121,6 +122,7 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 `    center -> "Nhanh2";`
 `    "Nhanh2" [label="Nhánh Chính 2"];` # Đặt nhãn tiếng Việt
 `    "Nhanh2" -> "ND2_1" [label="Nội dung 2.1"];` # Đặt nhãn tiếng Việt
+`    "Nhanh2" -> "ND2_2" [label="Nội dung 2.2"];` # Đặt nhãn tiếng Việt
 `}}`
 `[END_GRAPHVIZ]`
 
@@ -129,7 +131,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI TRIỆT ĐỂ Ở PHẦN VI)
+# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOẠI BỎ TIÊU ĐỀ MÃ NGUỒN GRAPHVIZ)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
@@ -148,6 +150,7 @@ def create_word_document(markdown_text, lesson_title):
 
     lines = markdown_text.split('\n')
     is_in_table_section = False
+    is_in_part_vi = False # <-- Cờ mới để theo dõi PHẦN VI
     table = None
     
     # --------------------------------------------------------------------------------
@@ -176,16 +179,34 @@ def create_word_document(markdown_text, lesson_title):
             continue
             
         # *******************************************************************
-        # BƯỚC SỬA LỖI CẤP THIẾT: DỪNG XỬ LÝ NỘI DUNG TẠI PHẦN VI HOẶC DẤU ---
-        # Đảm bảo nội dung thô (Graphviz) không bao giờ được thêm vào.
+        # BƯỚC SỬA LỖI CẤP THIẾT: BẮT ĐẦU VÀ KẾT THÚC XỬ LÝ PHẦN VI
         # *******************************************************************
-        if line.startswith("---") or re.match(r'^PHẦN\s[IVX]+\.', line):
-            is_in_table_section = False
         
-        # DỪNG LẠI TRƯỚC KHI XỬ LÝ PHẦN VI, ĐỂ CHÚNG TA TỰ XỬ LÝ BÊN NGOÀI VÒNG LẶP.
+        # Bỏ qua dòng tiêu đề "PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)" (nếu AI có tạo)
+        if re.match(r'PHẦN VI\.\s*SƠ ĐỒ TƯ DUY.*', line, re.IGNORECASE):
+            is_in_part_vi = True
+            continue 
+            
+        # Bắt đầu code Graphviz -> Bật cờ PHẦN VI
+        if "[START_GRAPHVIZ]" in line:
+            is_in_part_vi = True
+            continue
+            
+        # Kết thúc code Graphviz -> Tắt cờ PHẦN VI và BẮT ĐẦU CHUYỂN SANG PHẦN TỰ CHÈN OUTLINE
+        if "[END_GRAPHVIZ]" in line:
+            is_in_part_vi = False
+            # Dừng vòng lặp tại đây để xử lý PHẦN VI TỰ ĐỘNG (outline) sau vòng lặp
+            break 
+            
+        # Bỏ qua nội dung trong PHẦN VI (Tức là toàn bộ mã Graphviz DOT)
+        if is_in_part_vi:
+            continue
+            
+        # DỪNG LẠI TRƯỚC KHI XỬ LÝ BẤT KỲ DÒNG NÀO LÀ "PHẦN VI."
+        # Đảm bảo nội dung thô (Graphviz) không bao giờ được thêm vào.
         if line.startswith("PHẦN VI."):
              break 
-        
+             
         # *******************************************************************
         
         # --------------------------------------------------------------------------------
@@ -269,6 +290,7 @@ def create_word_document(markdown_text, lesson_title):
     # *******************************************************************
     # 2. XỬ LÝ PHẦN VI (ĐẢM BẢO TIÊU ĐỀ VÀ NỘI DUNG GỢI Ý ĐÚNG)
     # *******************************************************************
+    # Tiêu đề chuẩn PHẦN VI sẽ được thêm vào ĐÚNG 1 LẦN
     document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
                  
     if graph_code_content.strip():
@@ -301,7 +323,7 @@ def create_word_document(markdown_text, lesson_title):
             # 2. Thêm các nhánh chính và nhánh phụ
             for label in unique_labels:
                 # Lọc bỏ các label quá ngắn hoặc là tên biến (ví dụ: 'center', 'Nhanh1')
-                if (len(label) < 10 and not any(c.isalpha() for c in label)) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung", "kết quả"]:
+                if (len(label) < 10 and not any(c.isalpha() for c in label)) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung", "kết quả", "cach_lam", "luyen_tap", "van_dung", "muc_tieu"]:
                     continue
 
                 # Xử lý các dòng xuống dòng (\n) trong nhãn
