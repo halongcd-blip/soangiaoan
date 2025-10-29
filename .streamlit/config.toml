@@ -1,0 +1,7 @@
+[server]
+enableCORS = true
+enableXsrfProtection = true
+
+[runtime]
+# ÉP SỬ DỤNG PYTHON 3.11 để ổn định các gói thư viện
+python_version = "3.11"
