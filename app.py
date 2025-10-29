@@ -2,7 +2,7 @@ import streamlit as st
 import time
 from docx import Document
 from io import BytesIO
-import re # Cần để làm sạch Markdown
+import re 
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
@@ -10,7 +10,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from PIL import Image
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI (GIỮ NGUYÊN)
+# 1. CẤU HÌNH "BỘ NÃO" AI (ĐÃ CẬP NHẬT PROMPT GỐC VỀ PHẦN VI)
 # -----------------------------------------------------------------
 import google.generativeai as genai
 
@@ -23,7 +23,7 @@ except:
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
-# Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo (ĐÃ CHỈNH SỬA)
+# Đây là "Prompt Gốc" phiên bản Tiểu học chúng ta đã tạo (ĐÃ CHỈNH SỬA LẠI PHẦN VI)
 PROMPT_GOC = """
 CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT CỨ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
 
@@ -103,8 +103,8 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 - Nếu `{yeu_cau_mindmap}` là 'CÓ':
 - **YÊU CẦU BẮT BUỘC:** Bạn PHẢI tạo một Sơ đồ tư duy (Mind Map) tóm tắt nội dung chính của bài học {ten_bai} bằng **ngôn ngữ Graphviz DOT**.
 - **TUYỆT ĐỐI KHÔNG SỬ DỤNG:** Markdown, gạch đầu dòng, hay bất kỳ định dạng nào khác ngoài mã Graphviz DOT thuần túy trong phần này.
-- **TUYỆT ĐỐI KHÔNG TẠO BẤT CỨ TIÊU ĐỀ NÀO** (ví dụ: PHẦN VI.) **HAY DÒNG VĂN BẢN NÀO TRƯỚC THẺ START_GRAPHVIZ**.
-- Sơ đồ phải rõ ràng, phân cấp, sử dụng tiếng Việt có dấu trong các nhãn (label). Sử dụng `layout=twopi` hoặc `layout=neato` để có bố cục tỏa tròn đẹp mắt.
+- **TUYỆT ĐỐI KHÔNG TẠO BẤT CỨ TIÊU ĐỀ NÀO** (ví dụ: PHẦN VI., hay bất kỳ dòng văn bản nào khác) **TRƯỚC THẺ START_GRAPHVIZ**.
+- Sơ đồ phải rõ ràng, phân cấp, sử dụng tiếng Việt có dấu trong các nhãn (label) và **phải có nhãn mô tả ý tưởng chi tiết (để chức năng trích xuất gợi ý hoạt động được)**. Sử dụng `layout=twopi` hoặc `layout=neato` để có bố cục tỏa tròn đẹp mắt.
 - **QUAN TRỌNG:** Bọc toàn bộ mã code Graphviz DOT trong 2 thẻ **DUY NHẤT**: `[START_GRAPHVIZ]` ở dòng đầu tiên và `[END_GRAPHVIZ]` ở dòng cuối cùng của mã nguồn. Không thêm bất kỳ văn bản nào khác bên ngoài hai thẻ này trong phần VI.
 
 ---
@@ -112,7 +112,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOGIC BỎ "MỤC TIÊU" KHỎI BẢNG)
+# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI LOGIC ĐỊNH DẠNG LIST VÀ DỌN DẸP PHẦN VI)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
@@ -126,29 +126,32 @@ def clean_content(text):
 def create_word_document(markdown_text, lesson_title):
     document = Document()
     
-    # 1. ĐỊNH NGHĨA CUSTOM STYLE ĐỂ TẠO GẠCH ĐẦU DÒNG NGANG (-)
+    # 1. ĐỊNH NGHĨA CUSTOM STYLE TẠO DẤU CHẤM (BULLET POINT: •)
+    # Đây là cách chuẩn xác để tạo Bullet point (dấu chấm tròn) trong Word
     try:
-        style = document.styles.add_style('ListHyphen', WD_STYLE_TYPE.PARAGRAPH)
+        # Nếu đã có style 'List Bullet' thì dùng, nếu chưa có thì định nghĩa custom
+        style_id = 1
+        abstract_num = document.numbering_part.element.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}abstractNum')
+        if abstract_num is None:
+             abstract_num = document.numbering_part.element.xpath('//w:abstractNum')[0]
+             
+        # Dùng lại abstract num 1 (thường là bullet)
+        document.styles.add_style('ListBulletCustom', WD_STYLE_TYPE.PARAGRAPH)
+        style = document.styles['ListBulletCustom']
         style.base_style = document.styles['List Paragraph']
-        
         font = style.font
         font.size = Pt(12)
         
-        # Kỹ thuật thêm gạch ngang
-        paragraph_format = style.paragraph_format
-        
-        # Tạo Level 1 (gạch ngang)
-        numbering = document.numbering_part.element.xpath('//w:num[w:abstractNumId/@w:val="1"]')[0]
-        level = numbering.xpath('//w:lvl[w:ilvl="0"]')[0]
-        level.xpath('//w:numFmt')[0].set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', 'bullet')
-        level.xpath('//w:lvlText')[0].set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '-')
-        
-        document.styles['List Hyphen'] = style
-    except:
-        pass 
+        # Chỉ cần dùng style List Paragraph là đủ (vì nó có sẵn logic list)
+        # Bỏ qua việc chỉnh sửa numbering part để tránh lỗi phức tạp
+    except Exception as e:
+        # print(f"Error creating custom list style: {e}")
+        pass
     
     if lesson_title:
         document.add_heading(f"KẾ HOẠCH BÀI DẠY: {lesson_title.upper()}", level=1)
+        # Canh giữa tiêu đề
+        document.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         document.add_paragraph()
 
     lines = markdown_text.split('\n')
@@ -168,7 +171,8 @@ def create_word_document(markdown_text, lesson_title):
             continue
         if "[END_GRAPHVIZ]" in line:
             parsing_graph = False
-            break 
+            # Dùng continue thay vì break để đảm bảo vòng lặp chính xử lý nốt các phần khác
+            continue 
         if parsing_graph:
             graph_code_content += line + "\n"
     # --------------------------------------------------------------------------------
@@ -181,7 +185,7 @@ def create_word_document(markdown_text, lesson_title):
             continue
             
         # *******************************************************************
-        # BƯỚC 3: XỬ LÝ PHẦN VI (LOẠI BỎ CODE THÔ)
+        # BƯỚC 3: XỬ LÝ PHẦN VI (LOẠI BỎ CODE THÔ VÀ TIÊU ĐỀ THỪA)
         # *******************************************************************
         if re.match(r'PHẦN VI\.\s*SƠ ĐỒ TƯ DUY.*', line, re.IGNORECASE) or "[START_GRAPHVIZ]" in line:
             is_in_part_vi = True
@@ -189,13 +193,15 @@ def create_word_document(markdown_text, lesson_title):
             
         if "[END_GRAPHVIZ]" in line:
             is_in_part_vi = False
-            break 
+            continue 
             
         if is_in_part_vi:
+            # Loại bỏ mọi nội dung trong khi đang phân tích code Graphviz
             continue
             
         if line.startswith("PHẦN VI."):
-             break 
+             # Nếu AI vẫn tạo ra tiêu đề PHẦN VI. ngoài luồng, ta bỏ qua nó
+             continue 
              
         # *******************************************************************
         
@@ -215,7 +221,7 @@ def create_word_document(markdown_text, lesson_title):
             
             # Định dạng tiêu đề cột
             for cell in hdr_cells:
-                cell.paragraphs[0].text = cell.paragraphs[0].text.strip() # Dọn dẹp văn bản thừa
+                cell.paragraphs[0].text = cell.paragraphs[0].text.strip()
                 cell.paragraphs[0].runs[0].bold = True
                 cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             
@@ -240,11 +246,11 @@ def create_word_document(markdown_text, lesson_title):
                     is_main_header = ACTIVITY_HEADERS_PATTERN.match(gv_content)
                     
                     if is_main_header:
-                        # 4. TRƯỜNG HỢP: DÒNG LÀ TIÊU ĐỀ HOẠT ĐỘNG (CẦN MERGE CELL)
+                        # TRƯỜNG HỢP: DÒNG LÀ TIÊU ĐỀ HOẠT ĐỘNG (CẦN MERGE CELL)
                         current_row = table.add_row().cells 
                         current_row[0].merge(current_row[1])
                         
-                        # Xử lý nội dung (chắc chắn là tiêu đề chính)
+                        # Xử lý nội dung 
                         content_line = gv_content.strip().strip('*-').strip()
                         if content_line:
                             p = current_row[0].add_paragraph(content_line)
@@ -252,7 +258,7 @@ def create_word_document(markdown_text, lesson_title):
                             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
                     else:
-                        # 5. TRƯỜNG HỢP: DÒNG LÀ NỘI DUNG CHI TIẾT CỦA GV/HS (KHÔNG MERGE)
+                        # TRƯỜNG HỢP: DÒNG LÀ NỘI DUNG CHI TIẾT CỦA GV/HS (KHÔNG MERGE)
                         current_row = table.add_row().cells 
 
                         # Xử lý nội dung cho cột GV và HS
@@ -263,16 +269,20 @@ def create_word_document(markdown_text, lesson_title):
                                 content_line = content_line.strip()
                                 if not content_line: continue
                                 
-                                # Chỉ định dấu gạch đầu dòng ngang (-)
+                                # Chỉ định dấu gạch đầu dòng (Sử dụng list bullet chuẩn)
                                 if content_line.startswith('*') or content_line.startswith('-'):
-                                    p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip().replace('**', ''), style='ListHyphen')
+                                    # Sử dụng style 'List Paragraph' để đảm bảo là bullet point (dấu chấm)
+                                    p = current_row[cell_index].add_paragraph(content_line.lstrip('*- ').strip().replace('**', ''), style='List Paragraph')
+                                    # Cài đặt list level 1 (thường là dấu chấm)
+                                    p.paragraph_format.left_indent = Inches(0.25)
+                                    p.add_run('•\t').insert_before() # Thêm thủ công dấu bullet
                                 else:
                                     current_row[cell_index].add_paragraph(content_line.replace('**', ''))
                     
                     continue # Chuyển sang dòng tiếp theo trong Markdown
             
         # --------------------------------------------------------------------------------
-        # 6. XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V)
+        # XỬ LÝ NỘI DUNG NGOÀI BẢNG (I, II, IV, V)
         # --------------------------------------------------------------------------------
         if re.match(r'^[IVX]+\.\s|PHẦN\s[IVX]+\.', line):
             clean_line = line.strip().strip('**')
@@ -282,21 +292,26 @@ def create_word_document(markdown_text, lesson_title):
         elif line.startswith('**') and line.endswith('**'):
             document.add_heading(line.strip('**').replace('**', ''), level=3)
 
-        # Danh sách gạch đầu dòng (List Hyphen)
+        # Danh sách gạch đầu dòng (List Bullet - Dấu chấm)
         elif line.startswith('*') or line.startswith('-'):
-            document.add_paragraph(line.lstrip('*- ').strip().replace('**', ''), style='ListHyphen')
+            p = document.add_paragraph(line.lstrip('*- ').strip().replace('**', ''))
+            # Sử dụng List Paragraph và thêm dấu bullet thủ công cho chắc chắn là dấu chấm tròn
+            p.style = 'List Paragraph'
+            p.add_run('•\t').insert_before()
+            p.paragraph_format.left_indent = Inches(0.25)
         else:
-            # Văn bản thường (cũng loại bỏ ** thừa)
+            # Văn bản thường 
             document.add_paragraph(line.replace('**', ''))
 
 
     # *******************************************************************
-    # 7. XỬ LÝ PHẦN VI (ĐẢM BẢO TIÊU ĐỀ VÀ NỘI DUNG GỢI Ý ĐÚNG)
+    # 4. XỬ LÝ PHẦN VI (GỢI Ý SƠ ĐỒ TƯ DUY)
     # *******************************************************************
+    # Đảm bảo PHẦN VI. luôn được đặt ở cuối
     document.add_heading("PHẦN VI. GỢI Ý SƠ ĐỒ TƯ DUY", level=2)
                  
     if graph_code_content.strip():
-        # Regex để tìm tất cả các nhãn (label)
+        # Regex để tìm tất cả các nhãn (label) - Đã được yêu cầu AI viết chi tiết
         labels = re.findall(r'label="([^"]*)"', graph_code_content, re.DOTALL)
         
         # Lọc bỏ các label rỗng và trùng lặp
@@ -309,18 +324,19 @@ def create_word_document(markdown_text, lesson_title):
             # Lấy tiêu đề chính (thường là label của nút center)
             center_label = next((label for label in unique_labels if lesson_title.upper() in label.upper() and len(label) > 10), None)
             
-            # 1. Thêm nhãn trung tâm (Nếu tìm thấy)
             if center_label:
+                # 1. Thêm nhãn trung tâm (Nhánh cấp 1 - Dùng dấu gạch ngang)
                 center_label_parts = center_label.replace(r'\n', ' | ').split('|')
                 
-                # Tạo gạch ngang cấp 1
-                p = document.add_paragraph(f"{center_label_parts[0].replace('**', '').strip()}", style='ListHyphen')
+                p = document.add_paragraph(f"- {center_label_parts[0].replace('**', '').strip()}")
                 p.runs[0].bold = True
+                p.style = 'List Paragraph' 
+                p.paragraph_format.left_indent = Inches(0.25)
                 
                 if center_label in unique_labels:
                     unique_labels.remove(center_label)
             
-            # 2. Thêm các nhánh chính và nhánh phụ
+            # 2. Thêm các nhánh chính và nhánh phụ (Nhánh cấp 2, 3)
             for label in unique_labels:
                 # Lọc bỏ các label quá ngắn hoặc là tên biến 
                 if (len(label) < 10 and not any(c.isalpha() for c in label)) or label.lower().strip() in ["center", "nhanh1", "nhanh2", "noidung", "nội dung", "kết quả", "cach_lam", "luyen_tap", "van_dung", "muc_tieu"]:
@@ -334,20 +350,23 @@ def create_word_document(markdown_text, lesson_title):
                 if not main_label or len(main_label) < 5: 
                     continue
                 
-                # Nhãn chính (main branch) - Gạch đầu dòng cấp 2 (Indent 1)
-                p = document.add_paragraph(f"  - {main_label}", style='List Continue')
-                p.paragraph_format.left_indent = Inches(0.25)
+                # Nhãn chính (main branch) - Dùng dấu chấm tròn
+                p = document.add_paragraph(f"  {main_label}")
+                p.style = 'List Paragraph'
+                p.add_run('•\t').insert_before() # Thêm dấu chấm tròn
+                p.paragraph_format.left_indent = Inches(0.5)
                         
-                # Thêm các dòng phụ (sub branch) - Gạch đầu dòng cấp 3 (Indent 2)
+                # Thêm các dòng phụ (sub branch) - Dùng dấu chấm tròn
                 for part in label_parts[1:]:
                     part = part.strip().replace('**', '') 
                     if part and len(part) > 3: 
-                        p = document.add_paragraph(f"    - {part}")
-                        p.style = 'List Continue 2' 
-                        p.paragraph_format.left_indent = Inches(0.5)
+                        p = document.add_paragraph(f"    {part}")
+                        p.style = 'List Paragraph'
+                        p.add_run('•\t').insert_before() # Thêm dấu chấm tròn
+                        p.paragraph_format.left_indent = Inches(0.75)
 
         else:
-            document.add_paragraph("(AI đã tạo Graphviz nhưng không tìm thấy nhãn nội dung (label) để trích xuất gợi ý. Vui lòng kiểm tra lại yêu cầu.)")
+            document.add_paragraph("(AI đã tạo Graphviz nhưng không tìm thấy nhãn nội dung (label) chi tiết để trích xuất gợi ý. Vui lòng kiểm tra lại yêu cầu Sơ đồ tư duy.)")
         
     else:
         document.add_paragraph("(Không tìm thấy mã nguồn Graphviz. Có thể yêu cầu tạo sơ đồ tư duy là 'KHÔNG' hoặc AI đã không tạo ra nội dung Graphviz hợp lệ.)")
@@ -361,7 +380,7 @@ def create_word_document(markdown_text, lesson_title):
 
 
 # -----------------------------------------------------------------
-# 8. XÂY DỰNG GIAO DIỆN "CHAT BOX" (Web App) (GIỮ NGUYÊN)
+# 5. XÂY DỰNG GIAO DIỆN "CHAT BOX" (Web App) (GIỮ NGUYÊN)
 # -----------------------------------------------------------------
 
 st.set_page_config(page_title="Trợ lý Soạn giáo án AI", page_icon="🤖")
