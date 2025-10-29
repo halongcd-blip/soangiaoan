@@ -17,10 +17,6 @@ from PIL import Image # Thư viện xử lý ảnh Pillow
 # 1. CẤU HÌNH "BỘ NÃO" AI
 # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI
-# -----------------------------------------------------------------
-
 # LẤY API KEY TỪ STREAMLIT SECRETS
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -33,7 +29,6 @@ genai.configure(api_key=API_KEY)
 
 # Sử dụng model gemini-2.5-flash (ổn định nhất, hỗ trợ ảnh, không dùng -latest)
 model = genai.GenerativeModel(model_name="gemini-2.5-flash") 
-# -----------------------------------------------------------------
 # -----------------------------------------------------------------
 
 
@@ -72,23 +67,26 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 2.  **Chuẩn bị của học sinh (HS):** (SGK, Vở bài tập, bút màu...)
 
 **III. Các hoạt động dạy học chủ yếu**
-**QUY TẮC CỰC KỲ QUAN TRỌNG:** Toàn bộ nội dung của mục 3 này PHẢI được trình bày trong **MỘT BẢNG MARKDOWN DUY NHẤT** có 2 cột.
-**QUY TẮC BẮT BUỘC SỐ 2 (NỘI DUNG):** Nội dung trong từng ô phải được trình bày dưới dạng gạch đầu dòng MARKDOWN (dấu * hoặc -) để xuống dòng.
+# SỬA LỖI 3: YÊU CẦU AI SOẠN KỸ HƠN VÀ DÙNG PP DẠY HỌC TÍCH CỰC
+**QUY TẮC QUAN TRỌNG VỀ NỘI DUNG:** Phần này PHẢI được soạn thật kỹ lưỡng, chi tiết. Ưu tiên sử dụng các phương pháp và kỹ thuật dạy học tích cực (ví dụ: KWL, Mảnh ghép, Khăn trải bàn, Góc học tập, Trạm học tập, Đóng vai, Sơ đồ tư duy...) để phát huy tối đa năng lực và phẩm chất của học sinh theo Chương trình GDPT 2018.
 
+**QUY TẮC QUAN TRỌNG VỀ BẢNG BIỂU:** Toàn bộ nội dung của mục 3 này PHẢI được trình bày trong **MỘT BẢNG MARKDOWN DUY NHẤT** có 2 cột.
+
+# SỬA LỖI 1: YÊU CẦU AI ĐỂ TRỐNG CỘT 2 Ở DÒNG HEADER
 | Hoạt động của giáo viên | Hoạt động của học sinh |
 | :--- | :--- |
-| **1. Hoạt động Mở đầu (Khởi động, Kết nối)** | **1. Hoạt động Mở đầu (Khởi động, Kết nối)** |
+| **1. Hoạt động Mở đầu (Khởi động, Kết nối)** | |
 | *Mục tiêu: Tạo tâm thế vui vẻ, hứng thú.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
-| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các hoạt động tương tác của HS) |
-| **2. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** | **2. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** |
+| (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | (Viết chi tiết các hoạt động tương tác của HS) |
+| **2. Hoạt động Hình thành kiến thức mới (Trải nghiệm, Khám phá)** | |
 | *Mục tiêu: (Bám sát {yeu_cau} để hình thành kiến thức mới)* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
-| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS quan sát, thảo luận) |
-| **3. Hoạt động Luyện tập, Thực hành** | **3. Hoạt động Luyện tập, Thực hành** |
+| (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | (Viết chi tiết các bước HS quan sát, thảo luận) |
+| **3. Hoạt động Luyện tập, Thực hành** | |
 | *Mục tiêu: Áp dụng kiến thức, rèn kỹ năng. (Nếu có ảnh tải lên, GV sẽ dùng bài tập từ ảnh ở đây. Nếu yeu_cau_phieu là CÓ, GV phải giao Phiếu bài tập).* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
-| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS thực hành cá nhân/nhóm) |
-| **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** | **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** |
+| (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | (Viết chi tiết các bước HS thực hành cá nhân/nhóm) |
+| **4. Hoạt động Vận dụng, Trải nghiệm (Củng cố)** | |
 | *Mục tiêu: Liên hệ thực tế, củng cố bài.* | *Mục tiêu: Đạt được mục tiêu GV đề ra.* |
-| **Cách tiến hành:** (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | **Cách tiến hành:** (Viết chi tiết các bước HS trả lời, cam kết hành động) |
+| (Viết chi tiết, dùng dấu gạch đầu dòng `*` cho mỗi bước) | (Viết chi tiết các bước HS trả lời, cam kết hành động) |
 
 ---
 
@@ -120,8 +118,16 @@ Hãy bắt đầu tạo giáo án.
 # ==================================================================
 
 # Các hàm xử lý Word (Giữ nguyên)
+# SỬA LỖI 2 (Nâng cấp hàm clean_content):
 def clean_content(text):
-    return re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
+    # 1. Loại bỏ cụm "Cách tiến hành" (logic cũ)
+    text = re.sub(r'Cách tiến hành[:]*\s*', '', text, flags=re.IGNORECASE).strip()
+    
+    # 2. Loại bỏ TẤT CẢ các thẻ HTML (như <br>, <strong>, <div>)
+    # Đây là giải pháp đã khắc phục file Word của bạn
+    text = re.sub(r'<[^>]+>', '', text, flags=re.IGNORECASE).strip()
+    
+    return text
 
 def create_word_document(markdown_text, lesson_title):
     document = Document()
@@ -167,6 +173,7 @@ def create_word_document(markdown_text, lesson_title):
                 cells_content = [c.strip() for c in line.split('|')[1:-1]]
                 
                 if len(cells_content) == 2:
+                    # Chạy hàm clean_content đã được nâng cấp (Sửa lỗi 2)
                     gv_content = clean_content(cells_content[0])
                     hs_content = clean_content(cells_content[1])
                     
@@ -286,12 +293,9 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 # LÀM SẠCH KẾT QUẢ ĐỂ CHỈ HIỂN THỊ GIÁO ÁN
                 full_text = response.text
 
-                # ************ DÒNG SỬA LỖI CỐT LÕI: LỌC SẠCH THẺ <br> ************
-                # Sử dụng re.sub để thay thế mọi sự xuất hiện của <br> (có thể có khoảng trắng) bằng dấu xuống dòng Markdown (hoặc khoảng trắng)
-                # THAY THẾ <br> BẰNG XUỐNG DÒNG (Dùng xuống dòng Markdown \n)
+                # Lọc sạch thẻ <br> (lỗi cũ)
                 full_text = re.sub(r'<\s*br\s*\/?>', '\n', full_text, flags=re.IGNORECASE) 
-                # *******************************************************************
-
+                
                 start_index = full_text.find("I. Yêu cầu cần đạt")
                 
                 if start_index != -1:
@@ -299,9 +303,13 @@ if st.button("🚀 Tạo Giáo án ngay!"):
                 else:
                     cleaned_text = full_text
 
-                st.markdown(cleaned_text) 
+                # SỬA LỖI 2: LỌC "Cách tiến hành:" RA KHỎI PHẦN HIỂN THỊ WEB
+                cleaned_text_display = re.sub(r'Cách tiến hành[:]*\s*', '', cleaned_text, flags=re.IGNORECASE)
+                
+                st.markdown(cleaned_text_display) # Hiển thị văn bản đã lọc
                 
                 # BẮT ĐẦU KHỐI CODE TẢI XUỐNG WORD
+                # (Sử dụng cleaned_text gốc, vì hàm create_word_document đã có logic lọc riêng)
                 word_bytes = create_word_document(cleaned_text, ten_bai)
                 
                 st.download_button(
@@ -323,8 +331,3 @@ Sản phẩm của Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai. tha
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-
-
-
-
-
