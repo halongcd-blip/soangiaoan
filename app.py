@@ -20,17 +20,12 @@ try:
 except:
     # Dùng API Key giả cho môi trường giả lập, bạn cần thay bằng API Key thật
     API_KEY = "FAKE_API_KEY_FOR_DEMO" 
-    # st.error("LỖI CẤU HÌNH: Ứng dụng chưa được cung cấp 'GEMINI_API_KEY' trong Streamlit Secrets.")
-    # st.stop() # Không dừng ứng dụng để tránh lỗi khi dev/demo
 
-# Cấu hình API key cho thư viện Gemini (Chỉ truyền API Key để tránh lỗi)
 genai.configure(api_key=API_KEY)
-
-# Sử dụng model gemini-2.5-flash (ổn định nhất, hỗ trợ ảnh, không dùng -latest)
-model = genai.GenerativeModel(model_name="gemini-2.5-flash") 
+model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
 # -----------------------------------------------------------------
-# **PROMPT GỐC (ĐÃ ĐƯỢC CẬP NHẬT THEO 5 YÊU CẦU MỚI)**
+# **PROMPT GỐC (ĐÃ ĐƯỢC CẬP NHẬT THEO YÊU CẦU MỚI CỦA BẠN)**
 # -----------------------------------------------------------------
 PROMPT_GOC = """
 CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT CỨ THẺ HTML NÀO (ví dụ: <br/>, <strong>). Hãy dùng định dạng MARKDOWN thuần túy (dấu * hoặc - cho gạch đầu dòng và xuống dòng tự động).
@@ -38,10 +33,14 @@ CẢNH BÁO QUAN TRỌNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG BẤT CỨ THẺ HTM
 Bạn là một chuyên gia giáo dục Tiểu học hàng đầu Việt Nam, am hiểu sâu sắc Chương trình GDPT 2018 và kỹ thuật thiết kế Kế hoạch Bài Dạy (giáo án) theo Công văn 2345.
 
 Nhiệm vụ của bạn là soạn một Kế hoạch bài dạy chi tiết, sáng tạo, tập trung vào phát triển năng lực và phẩm chất.
-Nếu người dùng tải lên hình ảnh, bạn phải:
-1. Phân tích hình ảnh đó (đây là ảnh chụp bài tập trong SGK).
-2. Trích xuất (chuyển ảnh thành chữ) nội dung các bài tập trong ảnh (chỉ lấy chữ, không lấy hình ảnh khác).
-3. Sử dụng nội dung chữ vừa trích xuất đó để đưa vào "Hoạt động 3: Luyện tập, Thực hành" một cách hợp lý.
+
+**YÊU CẦU ĐẶC BIỆT VỀ HÌNH ẢNH (NẾU CÓ):**
+Nếu người dùng tải lên 1 hoặc 2 ảnh, bạn PHẢI:
+1.  Phân tích hình ảnh (đây là ảnh chụp bài tập trong SGK).
+2.  Trích xuất (chuyển ảnh thành chữ) **CHỈ NỘI DUNG BÀI TẬP** (không lấy hình ảnh/chi tiết thừa).
+3.  Đưa nội dung bài tập (ĐỀ BÀI) này vào cột "Hoạt động của giáo viên" (trong Hoạt động 3).
+4.  Soạn thảo ĐÁP ÁN/HƯỚNG DẪN GIẢI cho bài tập đó và đưa vào cột "Hoạt động của học sinh".
+5.  ĐỀ BÀI và ĐÁP ÁN phải nằm trên **CÙNG MỘT HÀNG NGANG** của bảng, không được lệch dòng.
 
 DỮ LIỆU ĐẦU VÀO:
 1.  **Môn học:** {mon_hoc}
@@ -68,12 +67,10 @@ Bạn PHẢI tuân thủ tuyệt đối cấu trúc và các yêu cầu sau:
 
 **III. Các hoạt động dạy học chủ yếu**
 **QUY TẮC QUAN TRỌNG VỀ NỘI DUNG:** (TỔNG THỜI GIAN TIẾT HỌC LÀ 35 PHÚT).
-Phần này PHẢI được soạn thật **kỹ lưỡng, chi tiết và tỉ mỉ**.
+Phần này PHẢI được soạn thật **kỹ lưỡng, chi tiết và tỉ mỉ** cho từng hoạt động (a, b, c...).
 Ưu tiên sử dụng các phương pháp và kỹ thuật dạy học tích cực (ví dụ: KWL, Mảnh ghép, Khăn trải bàn, Góc học tập, Trạm học tập, Đóng vai, Sơ đồ tư duy...) để phát huy tối đa năng lực và phẩm chất của học sinh theo Chương trình GDPT 2018.
 
 **QUY TẮC QUAN TRỌNG VỀ BẢNG BIỂU:** Toàn bộ nội dung của mục 3 này PHẢI được trình bày trong **MỘT BẢNG MARKDOWN DUY NHẤT** có 2 cột.
-
-**YÊU CẦU VỀ ẢNH (NẾU CÓ):** Nếu người dùng tải ảnh bài tập, bạn phải trích xuất NỘI DUNG BÀI TẬP (chỉ lấy chữ) và chèn vào cột "Hoạt động của giáo viên" (trong Hoạt động 3). Sau đó, bạn phải soạn ĐÁP ÁN/HƯỚNG DẪN GIẢI cho bài tập đó và chèn vào cột "Hoạt động của học sinh" ở **ô tương ứng cùng hàng**.
 
 | Hoạt động của giáo viên | Hoạt động của học sinh |
 | :--- | :--- |
@@ -119,14 +116,14 @@ Phần này PHẢI được soạn thật **kỹ lưỡng, chi tiết và tỉ m
 - **TUYỆT ĐỐI KHÔNG TẠO BẤT CỨ TIÊU ĐỀ NÀO** (ví dụ: PHẦN VI., hay bất kỳ dòng văn bản nào khác) **TRƯỚC THẺ START_GRAPHVIZ**.
 - Sơ đồ phải rõ ràng, phân cấp, sử dụng tiếng Việt có dấu trong các nhãn (label) và **phải có nhãn mô tả ý tưởng chi tiết (để chức năng trích xuất gợi ý hoạt động hoạt động được)**. Sử dụng `layout=twopi` hoặc `layout=neato` để có bố cục tỏa tròn đẹp mắt.
 - **QUAN TRỌNG:** Bọc toàn bộ mã code Graphviz DOT trong 2 thẻ **DUY NHẤT**: `[START_GRAPHVIZ]` ở dòng đầu tiên và `[END_GRAPHVIZ]` ở dòng cuối cùng của mã nguồn. Không thêm bất kỳ văn bản nào khác bên ngoài hai thẻ này trong phần VI.
-- **LƯU Ý VỀ SƠ ĐỒ (ĐÃ CẬP NHẬT):** Sơ đồ phải **đơn giản**, **trọng tâm**. Chỉ bao gồm 1 nút trung tâm (tên bài học) và 3-4 nhánh chính (các hoạt động/kiến thức cốt lõi). **Không thêm các nhánh con chi tiết, rườm rà**.
+- **YÊU CẦU MỚI VỀ SƠ ĐỒ:** Sơ đồ phải **đơn giản**, **trọng tâm**. Chỉ bao gồm 1 nút trung tâm (tên bài học) và 3-4 nhánh chính (các hoạt động/kiến thức cốt lõi). **Không rườm rà, ít chi tiết.**
 
 ---
 Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (ĐÃ SỬA LỖI ĐỔI DẤU CHẤM • THÀNH DẤU GẠCH NGANG -)
+# CÁC HÀM XỬ LÝ (GIỮ NGUYÊN XI TỪ FILE app (6).py CỦA BẠN)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
@@ -138,7 +135,7 @@ def clean_content(text):
 def create_word_document(markdown_text, lesson_title):
     document = Document()
     
-    # 1. Định nghĩa style
+    # 1. Định nghĩa style (đã được tối ưu ở phiên bản trước)
     try:
         style_id = 1
         from docx.shared import Pt
@@ -288,12 +285,12 @@ def create_word_document(markdown_text, lesson_title):
                                 content_line = content_line.strip()
                                 if not content_line: continue
                                 
-                                # SỬA LỖI: THAY DẤU • BẰNG DẤU -
+                                # Chỉ định dấu gạch đầu dòng (Sử dụng list bullet chuẩn)
                                 if content_line.startswith('*') or content_line.startswith('-'):
                                     clean_text = content_line.lstrip('*- ').strip()
                                     # Tạo paragraph với style List Paragraph
                                     p = current_row[cell_index].add_paragraph(style='List Paragraph') 
-                                    p.add_run('-\t') # Sửa: Thêm dấu gạch ngang
+                                    p.add_run('•\t') # Thêm dấu bullet thủ công
                                     p.add_run(clean_text)
                                     p.paragraph_format.left_indent = Inches(0.25)
                                 else:
@@ -307,6 +304,7 @@ def create_word_document(markdown_text, lesson_title):
                 continue
                 
             # Trường hợp 3: Nếu là dòng bất thường (text trôi nổi) nhưng chưa đến điểm kết thúc, BỎ QUA dòng đó.
+            # Điều này giúp bảng vẫn tiếp tục nếu AI chèn text rác giữa HĐ 3 và HĐ 4.
             continue 
             
             # --------------------------------------------------------------------------------
@@ -334,11 +332,11 @@ def create_word_document(markdown_text, lesson_title):
         elif line.startswith('**') and line.endswith('**'):
             document.add_heading(line.strip('**').replace('**', ''), level=3)
 
-        # SỬA LỖI: THAY DẤU • BẰNG DẤU -
+        # Danh sách gạch đầu dòng (List Bullet - Dấu chấm)
         elif line.startswith('*') or line.startswith('-'):
             clean_text = line.lstrip('*- ').strip().replace('**', '')
             p = document.add_paragraph(style='List Paragraph')
-            p.add_run('-\t') # Sửa: Thêm dấu gạch ngang
+            p.add_run('•\t') 
             p.add_run(clean_text) 
 
             p.paragraph_format.left_indent = Inches(0.25)
@@ -392,9 +390,8 @@ def create_word_document(markdown_text, lesson_title):
                     continue
                 
                 # Nhãn chính (main branch) - Cấp 2
-                # SỬA LỖI: THAY DẤU • BẰNG DẤU -
                 p = document.add_paragraph(style='List Paragraph')
-                p.add_run('-\t') # Sửa: Thêm dấu gạch ngang
+                p.add_run('•\t')
                 p.add_run(f"  {main_label}")
                 p.paragraph_format.left_indent = Inches(0.5)
                         
@@ -402,9 +399,8 @@ def create_word_document(markdown_text, lesson_title):
                 for part in label_parts[1:]:
                     part = part.strip().replace('**', '') 
                     if part and len(part) > 3: 
-                        # SỬA LỖI: THAY DẤU • BẰNG DẤU -
                         p = document.add_paragraph(style='List Paragraph')
-                        p.add_run('-\t') # Sửa: Thêm dấu gạch ngang
+                        p.add_run('•\t')
                         p.add_run(f"    {part}")
                         p.paragraph_format.left_indent = Inches(0.75)
 
@@ -444,8 +440,8 @@ yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu 
 # -----------------------------------------------------------------
 # 6. KHAI BÁO BIẾN CHO FILE UPLOADER (GIỮ NGUYÊN LOGIC TẢI 2 ẢNH)
 # -----------------------------------------------------------------
-uploaded_files = st.file_uploader( 
-    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tối đa 2 ảnh, Tùy chọn)", 
+uploaded_files = st.file_uploader( # Đổi tên biến (từ _file sang _files)
+    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tối đa 2 ảnh, Tùy chọn)", # Sửa label
     type=["pdf", "png", "jpg", "jpeg"],
     accept_multiple_files=True # CHO PHÉP TẢI NHIỀU FILE
 )
