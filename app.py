@@ -10,14 +10,13 @@ from docx.enum.style import WD_STYLE_TYPE
 from PIL import Image
 
 # -----------------------------------------------------------------
-# 1. CẤU HÌNH "BỘ NÃO" AI
+# 1. CẤU HÌNH "BỘ NÃO" AI (GIỮ NGUYÊN)
 # -----------------------------------------------------------------
 import google.generativeai as genai
 
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    # Dùng API Key giả cho môi trường giả lập, bạn cần thay bằng API Key thật
     API_KEY = "FAKE_API_KEY_FOR_DEMO" 
 
 genai.configure(api_key=API_KEY)
@@ -112,7 +111,7 @@ Hãy bắt đầu tạo giáo án.
 """
 
 # -----------------------------------------------------------------
-# CÁC HÀM XỬ LÝ (SỬA LỖI LOGIC ĐÓNG BẢNG PREMATURELY)
+# CÁC HÀM XỬ LÝ (GIỮ NGUYÊN)
 # -----------------------------------------------------------------
 def clean_content(text):
     # 1. Loại bỏ cụm "Cách tiến hành"
@@ -172,7 +171,7 @@ def create_word_document(markdown_text, lesson_title):
         line = line.strip()
         if not line:
             continue
-                # 🔹 Bỏ dòng tiêu đề "PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)" nếu AI vẫn sinh ra
+        # 🔹 Bỏ dòng tiêu đề "PHẦN VI. SƠ ĐỒ TƯ DUY (MÃ NGUỒN GRAPHVIZ)" nếu AI vẫn sinh ra
         if re.match(r'PHẦN\s*VI\.\s*SƠ\s*ĐỒ\s*TƯ\s*DUY', line, re.IGNORECASE):
             continue
 
@@ -426,16 +425,21 @@ bo_sach = st.text_input("3. Bộ sách:", placeholder="Ví dụ: Cánh Diều")
 ten_bai = st.text_input("4. Tên bài học / Chủ đề:", placeholder="Ví dụ: Bài 2: Thời gian của em")
 yeu_cau = st.text_area("5. Yêu cầu cần đạt:", placeholder="Điền Yêu cầu cần đạt ...", height=150)
 
-# 6. KHAI BÁO BIẾN CHO FILE UPLOADER
-uploaded_file = st.file_uploader(
-    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tùy chọn)",
-    type=["pdf", "png", "jpg", "jpeg"]
+# -----------------------------------------------------------------
+# 6. KHAI BÁO BIẾN CHO FILE UPLOADER (ĐÃ SỬA ĐỂ TẢI NHIỀU FILE)
+# -----------------------------------------------------------------
+uploaded_files = st.file_uploader( # Đổi tên biến (từ _file sang _files)
+    "6. [Tải Lên] Ảnh/PDF trang Bài tập SGK (Tối đa 2 ảnh, Tùy chọn)", # Sửa label
+    type=["pdf", "png", "jpg", "jpeg"],
+    accept_multiple_files=True # CHO PHÉP TẢI NHIỀU FILE
 )
+# -----------------------------------------------------------------
 
-# 7. KHAI BÁO BIẾN CHO CHECKBOX PHIẾU BÀI TẬP
+
+# 7. KHAI BÁO BIẾN CHO CHECKBOX PHIẾU BÀI TẬP (GIỮ NGUYÊN)
 tao_phieu = st.checkbox("7. Yêu cầu tạo kèm Phiếu Bài Tập", value=False)
 
-# 8. <-- MỚI: Thêm Checkbox cho Sơ đồ tư duy
+# 8. <-- MỚI: Thêm Checkbox cho Sơ đồ tư duy (GIỮ NGUYÊN)
 tao_mindmap = st.checkbox("8. Yêu cầu tạo Sơ đồ tư duy trực quan", value=True)
 
 # Nút bấm để tạo giáo án
@@ -445,17 +449,17 @@ if st.button("🚀 Tạo KH bài dạy ngay!"):
     else:
         with st.spinner("Trợ lý AI đang soạn giáo án, vui lòng chờ trong giây lát..."):
             try:
-                # Logic cho Biến số Tùy chọn 1 (Tạo Phiếu Bài Tập)
+                # Logic cho Biến số Tùy chọn 1 (Tạo Phiếu Bài Tập) (GIỮ NGUYÊN)
                 yeu_cau_phieu_value = "CÓ" if tao_phieu else "KHÔNG"
 
-                # Logic cho Biến số Tùy chọn 2 (Sơ đồ tư duy)
+                # Logic cho Biến số Tùy chọn 2 (Sơ đồ tư duy) (GIỮ NGUYÊN)
                 yeu_cau_mindmap_value = "CÓ" if tao_mindmap else "KHÔNG"
 
 
                 # 1. Chuẩn bị Nội dung (Content List) cho AI (Tích hợp File và Text)
                 content = []
 
-                # 2. Điền Prompt (7 biến số text)
+                # 2. Điền Prompt (7 biến số text) (GIỮ NGUYÊN)
                 final_prompt = PROMPT_GOC.format(
                     mon_hoc=mon_hoc,
                     lop=lop,
@@ -466,16 +470,30 @@ if st.button("🚀 Tạo KH bài dạy ngay!"):
                     yeu_cau_mindmap=yeu_cau_mindmap_value
                 )
 
-                # 3. Logic cho Biến số Tùy chọn 2 (Tải File Bài Tập)
-                if uploaded_file is not None:
-                    # Xử lý PDF (nếu có)
-                    if uploaded_file.type == "application/pdf":
-                        st.error("Lỗi: Tính năng tải lên file PDF chưa được hỗ trợ. Vui lòng tải file ảnh (PNG, JPG).")
-                        st.stop() # Dừng thực thi nếu là PDF
+                # -----------------------------------------------------------------
+                # 3. LOGIC XỬ LÝ ẢNH (ĐÃ SỬA ĐỂ XỬ LÝ TỐI ĐA 2 ẢNH)
+                # -----------------------------------------------------------------
+                if uploaded_files: # Sử dụng biến (s)
+                    # Lấy tối đa 2 file đầu tiên
+                    files_to_process = uploaded_files[:2]
+                    
+                    st.info(f"Đang phân tích {len(files_to_process)} ảnh bài tập...")
 
-                    # Xử lý ảnh
-                    image = Image.open(uploaded_file)
-                    content.append(image)
+                    # Lặp qua các file được tải lên (tối đa 2)
+                    for uploaded_file in files_to_process:
+                        # Xử lý PDF (nếu có)
+                        if uploaded_file.type == "application/pdf":
+                            st.error(f"Lỗi: File {uploaded_file.name} là PDF, chưa được hỗ trợ. Vui lòng tải file ảnh (PNG, JPG).")
+                            continue # Bỏ qua file này và tiếp tục
+
+                        # Xử lý ảnh (Thêm vào list 'content')
+                        try:
+                            image = Image.open(uploaded_file)
+                            content.append(image)
+                        except Exception as e:
+                            st.error(f"Lỗi khi mở ảnh {uploaded_file.name}: {e}")
+                # -----------------------------------------------------------------
+
 
                 # 4. Thêm Prompt vào danh sách Content (luôn luôn có)
                 content.append(final_prompt)
@@ -483,7 +501,7 @@ if st.button("🚀 Tạo KH bài dạy ngay!"):
                 # 5. Gọi AI với danh sách nội dung (content)
                 response = model.generate_content(content)
 
-                # 6. Hiển thị kết quả
+                # 6. Hiển thị kết quả (GIỮ NGUYÊN)
                 st.balloons()
                 st.subheader("🎉 Giáo án của bạn đã sẵn sàng:")
 
@@ -517,13 +535,18 @@ if st.button("🚀 Tạo KH bài dạy ngay!"):
                 start_tag = "[START_GRAPHVIZ]"
                 end_tag = "[END_GRAPHVIZ]"
 
-                if tao_mindmap and start_tag in cleaned_text_display:
+                # (Sửa lỗi: dùng full_text gốc để tìm sơ đồ, vì cleaned_text_display đã bị xóa mất PHẦN VI)
+                if tao_mindmap and start_tag in full_text:
                     try:
                         # Tách nội dung trước và sau code Graphviz
                         before_graph = cleaned_text_display.split(start_tag)[0]
-                        temp = cleaned_text_display.split(start_tag)[1]
+                        
+                        # Tách code từ full_text gốc
+                        temp = full_text.split(start_tag)[1]
                         graph_code = temp.split(end_tag)[0].strip()
-                        after_graph = temp.split(end_tag)[1]
+                        
+                        # Tách nội dung sau code
+                        after_graph = cleaned_text_display.split(end_tag)[1]
 
                         # Hiển thị
                         st.markdown(before_graph)
@@ -533,18 +556,18 @@ if st.button("🚀 Tạo KH bài dạy ngay!"):
                         else:
                             st.warning("AI đã tạo thẻ tag nhưng mã nguồn Graphviz rỗng. Vui lòng chạy lại.")
                         
-                        # Loại bỏ tiêu đề "PHẦN VI." nếu nó nằm trong `after_graph` (đã lọc ở trên, nhưng giữ lại phòng trường hợp)
+                        # Loại bỏ tiêu đề "PHẦN VI." nếu nó nằm trong `after_graph`
                         after_graph = re.sub(r'PHẦN VI\.\s*GỢI Ý SƠ ĐỒ TƯ DUY.*', '', after_graph, flags=re.IGNORECASE)
                         st.markdown(after_graph)
 
                     except IndexError:
                         st.error("Lỗi khi trích xuất mã nguồn Graphviz: Không tìm thấy thẻ đóng `[END_GRAPHVIZ]`.")
-                        st.markdown(cleaned_text_display)
+                        st.markdown(cleaned_text_display) # Hiển thị văn bản (đã bị xóa code)
                     except Exception as e:
                         st.error(f"Lỗi khi vẽ sơ đồ tư duy: {e}")
                         st.markdown(cleaned_text_display)
                 else:
-                    st.markdown(cleaned_text_display)
+                    st.markdown(cleaned_text_display) # Hiển thị nếu không tick chọn hoặc không có code
                 # --- KẾT THÚC KHỐI LOGIC SƠ ĐỒ TƯ DU DUY ---
 
 
@@ -576,14 +599,3 @@ Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học H�
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
 )
-
-
-
-
-
-
-
-
-
-
-
