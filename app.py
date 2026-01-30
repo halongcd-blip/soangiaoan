@@ -601,7 +601,7 @@ if st.button("🚀 Tạo KH bài dạy ngay!"):
 st.sidebar.title("Giới thiệu")
 st.sidebar.info(
 """
-Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai - Tỉnh Quảng Ninh. tham gia ngày hội "Nhà giáo sáng tạo với công nghệ số và trí tuệ nhân tạo".
+Sản phẩm của thầy giáo Hoàng Trọng Nghĩa, Trường Tiểu học Hồng Gai - Tỉnh Quảng Ninh. tham gia cuộc thi "Giáo viên sáng tạo sản phẩm giáo dục trên nền tảng Roboki AI".
 
 Sản phẩm ứng dụng AI để tự động soạn Kế hoạch bài dạy cho giáo viên Tiểu học theo đúng chuẩn Chương trình GDPT 2018.
 """
